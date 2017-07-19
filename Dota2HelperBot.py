@@ -23,9 +23,10 @@ with open("data/settings.json") as json_data:
 	CHANGENICK_INTERVAL = settings["changenick_interval"]
 	API_INTERVAL = settings["api_interval"]
 	APIKEY = settings["apikey"]
-	NOTABLE_LEAGUES = settings["notable_leagues"]
-	VICTORYMESSAGES = settings["victorymessages"]
-	NOREPEATMATCHES = settings["norepeatmatches"]
+	FILTER_MATCHES = settings["filter_matches"]
+	notable_leagues = settings["notable_leagues"]
+	victorymessages = settings["victorymessages"]
+	norepeatmatches = settings["norepeatmatches"]
 
 DESC = "Dota2HelperBot, a Discord bot created by Blanedale"
 BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
@@ -54,6 +55,14 @@ async def change_nick():
 			newnick = random.choice(BOTNAMES) # Keep rerolling until we get a different name
 		await set_nick(newnick)
 		await asyncio.sleep(CHANGENICK_INTERVAL)
+
+# Unused for now. It's more convenient to have the one-server functionality for debugging purposes
+async def say_all_servers(channelid, msg):
+	for s in bot.servers:
+		if s.id == DEFAULT_SERVER:
+			await bot.send_message(bot.get_channel(channelid), msg)
+		else:
+			await bot.send_message(s.default_channel, msg)
 
 async def show_new_match(game):
 	if "radiant_team" in game:
@@ -131,7 +140,7 @@ async def get_match_data():
 		games = response.json()["result"]["games"]
 		finished_matches = list(bot.ongoing_matches)
 		for game in games:
-			if game["league_id"] in NOTABLE_LEAGUES and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
+			if (not FILTER_MATCHES or game["league_id"] in NOTABLE_LEAGUES) and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
 				if game["match_id"] in bot.ongoing_matches:
 					finished_matches.remove(game["match_id"])
 				else:
@@ -267,7 +276,7 @@ async def purgefromchannel(ctx, user: discord.Member):
 
 @bot.command()
 async def changename():
-	await bot.say("Too long have I endured this moniker. It is time to start anew.")
+	await bot.say("Too long have I endured this moniker. It is time to begin anew.")
 	current_nick = list(bot.servers)[0].me.nick
 	newnick = random.choice(BOTNAMES)
 	while newnick == current_nick:
