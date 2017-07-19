@@ -239,7 +239,7 @@ async def purge(ctx, user: discord.Member):
 		await bot.say("I fear the limitations bestowed upon me are too great for such a task.")
 
 @bot.command(pass_context = True)
-async def purge_from_channel(ctx, user: discord.Member):
+async def purgefromchannel(ctx, user: discord.Member):
 	server = ctx.message.server
 	author = ctx.message.author
 
