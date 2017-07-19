@@ -3,6 +3,8 @@
 import random
 import asyncio
 import requests
+import json
+import time # For logging only
 
 try:
 	import discord
@@ -10,9 +12,18 @@ try:
 except ImportError:
 	print("Unable to start Dota2HelperBot. Check your discord.py installation.")
 
-OWNER = 
-TOKEN = 
-PREFIX = ";"
+with open("data/settings.json") as json_data:
+	settings = json.load(json_data)
+	OWNER = settings["owner"]
+	TOKEN = settings["token"]
+	JOIN_CHANNEL = settings["join_channel"]
+	MATCHES_CHANNEL = settings["matches_channel"]
+	PREFIX = settings["prefix"]
+	CHANGENICK_INTERVAL = settings["changenick_interval"]
+	API_INTERVAL = settings["api_interval"]
+	APIKEY = settings["apikey"]
+	NOTABLE_LEAGUES = settings["notable_leagues"]
+
 DESC = "Dota2HelperBot, a Discord bot created by Blanedale"
 BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
 	"Bruni", "Buster", "Edith", "Ester", "Flo", "Francis", "Francisco", "Gil",
@@ -20,12 +31,8 @@ BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
 	"Juan", "Kitty", "Lionel", "Louie", "Lucille", "Lupe", "Mabel", "Maeby",
 	"Marco", "Marta", "Maurice", "Maynard", "Mildred", "Monty", "Mordecai",
 	"Morty", "Pablo", "Seymour", "Stan", "Tobias", "Vivian", "Walter", "Wilbur"]
-CHANGENICK_INTERVAL = 600
-API_INTERVAL = 20
-APIKEY = 
 LIVE_LEAGUE_GAMES_URL = "https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v0001/"
 MATCH_DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
-NOTABLE_LEAGUES = [5504, 5336, 5401]
 
 bot = commands.Bot(command_prefix = PREFIX, description = DESC)
 bot.ongoing_matches = []
@@ -45,43 +52,102 @@ async def change_nick():
 		await set_nick(newnick)
 		await asyncio.sleep(CHANGENICK_INTERVAL)
 
+async def show_new_match(game):
+	if "radiant_team" in game:
+		radiant_name = game["radiant_team"]["team_name"]
+	else:
+		radiant_name = "Radiant"
+
+	if "dire_team" in game:
+		dire_name = game["dire_team"]["team_name"]
+	else:
+		dire_name = "Dire"
+
+	bot.ongoing_matches.append(game["match_id"])
+
+	if game["series_type"] == 0:
+		series_desc = ""
+	elif game["series_type"] == 1:
+		series_desc = " (Game %s of 3)" % str(game["radiant_series_wins"] + game["dire_series_wins"] + 1)
+	elif game["series_type"] == 2:
+		series_desc = " (Game %s of 5)" % str(game["radiant_series_wins"] + game["dire_series_wins"] + 1)
+	else:
+		series_desc = " (unknown series type %s)" % str(game["series_type"])
+
+	await bot.send_message(bot.get_channel(MATCHES_CHANNEL), "The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
+
+async def show_match_results(game):
+	if "radiant_name" in game:
+		radiant_name = game["radiant_name"]
+	else:
+		radiant_name = "Radiant"
+
+	if "dire_name" in game:
+		dire_name = game["dire_name"]
+	else:
+		dire_name = "Dire"
+	
+	if game["radiant_win"]:
+		winner = radiant_name
+	else:
+		winner = dire_name
+
+	score = "%s-%s" % (game["radiant_score"], game["dire_score"])
+
+	m, s = divmod(game["duration"], 60)
+	min_string = "1 minute" if m == 1 else "%s minutes" % m
+
+	if s == 0:
+		sec_string = ""
+	elif s == 1:
+		sec_string = " and 1 second"
+	else:
+		sec_string = " and %s seconds" % s
+
+	await bot.send_message(bot.get_channel(MATCHES_CHANNEL), "%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"]))
+
 # Get live game data from Valve's web API
 async def get_match_data():
 	await bot.wait_until_ready()
 	while not bot.is_closed:
 		response = requests.get(LIVE_LEAGUE_GAMES_URL, params = {"key": APIKEY})
-		response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
+		try:
+			response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
+		except requests.exceptions.HTTPError as err:
+			print(err)
+			await asyncio.sleep(API_INTERVAL)
+			continue
+
+		# THIS SECTION FOR LOGGING
+		###############################
+		file = open("matchdata%s.txt" % time.time(), "w")
+		text = response.text.encode("utf-8")
+		file.write(str(text))
+		###############################
+
 		games = response.json()["result"]["games"]
 		finished_matches = list(bot.ongoing_matches)
 		for game in games:
-			#if game["league_id"] in NOTABLE_LEAGUES:
-			if True: # Lowering our standards
+			if game["league_id"] in NOTABLE_LEAGUES and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
 				if game["match_id"] in bot.ongoing_matches:
 					finished_matches.remove(game["match_id"])
 				else:
-					print("Adding match %s to list" % game["match_id"])
-					if "radiant_team" in game:
-						radiant_name = game["radiant_team"]["team_name"]
+					# THIS SECTION FOR LOGGING
+					#############################
+					if "radiant_name" in game:
+						radiant_name = game["radiant_name"]
 					else:
 						radiant_name = "Radiant"
 
-					if "dire_team" in game:
-						dire_name = game["dire_team"]["team_name"]
+					if "dire_name" in game:
+						dire_name = game["dire_name"]
 					else:
 						dire_name = "Dire"
 
-					bot.ongoing_matches.append(game["match_id"])
+					print("Adding match %s to list (%s vs. %s)" % (game["match_id"], radiant_name, dire_name))
+					#############################
 
-					if game["series_type"] == 0:
-						series_desc = ""
-					elif game["series_type"] == 1:
-						series_desc = " (Game %s of 3)" % str(game["radiant_series_wins"] + game["dire_series_wins"] + 1)
-					elif game["series_type"] == 2:
-						series_desc = " (Game %s of 5)" % str(game["radiant_series_wins"] + game["dire_series_wins"] + 1)
-					else:
-						series_desc = " (unknown series type %s)" % str(game["series_type"])
-
-					await bot.send_message(bot.get_channel("330452442401734666"), "The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
+					await show_new_match(game)
 
 		interval = API_INTERVAL
 		for finished in finished_matches:
@@ -92,14 +158,20 @@ async def get_match_data():
 
 			# Fetch specific game data
 			postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished, "key": APIKEY})
-			postgame.raise_for_status()
+			try:
+				postgame.raise_for_status()
+			except requests.exceptions.HTTPError as err:
+				print(err)
+				continue # Just try again next time
 			game = postgame.json()["result"]
 
 			# It seems that sometimes the match disappears from the GetLiveLeagueGames listing, but hasn't actually ended yet. I don't know why...
 			if "radiant_win" not in game or "duration" not in game:
-				print("Could not find match %s in GetLiveLeagueGames call, but it doesn't seem to have ended" % finished)
+				#print("Could not find match %s in GetLiveLeagueGames call, but it doesn't seem to have ended" % finished)
 				continue
 
+			# THIS SECTION FOR LOGGING
+			#############################
 			if "radiant_name" in game:
 				radiant_name = game["radiant_name"]
 			else:
@@ -109,28 +181,16 @@ async def get_match_data():
 				dire_name = game["dire_name"]
 			else:
 				dire_name = "Dire"
-			
-			if game["radiant_win"]:
-				winner = radiant_name
-			else:
-				winner = dire_name
 
-			m, s = divmod(game["duration"], 60)
-			if s == 0:
-				readable_duration = "%s minutes" % m
-			elif s == 1:
-				readable_duration = "%s minutes and 1 second" % m
-			else:
-				readable_duration = "%s minutes and %s seconds" % (m, s)
+			print("Match %s (%s vs. %s) finished" % (finished, radiant_name, dire_name))
+			#############################
 
-			await bot.send_message(bot.get_channel("330452442401734666"), "%s vs. %s has ended in %s victory, %s in." % (radiant_name, dire_name, winner, readable_duration))
+			await show_match_results(game)
 			bot.ongoing_matches.remove(finished)
-			print("Match %s finished" % finished)
 		await asyncio.sleep(interval)
 
 @bot.event
 async def on_ready():
-	await set_nick(random.choice(BOTNAMES))
 	print()
 	print("Dota2HelperBot, a Discord bot created by Blanedale")
 	print()
@@ -144,7 +204,7 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
 	if member.server.id == "330451340826509312":
-		channel = bot.get_channel("330451482455572493")
+		channel = bot.get_channel("JOIN_CHANNEl")
 	else:
 		channel = member.server.default_channel
 	await bot.send_message(channel, "%s has joined the server. Welcome!" % member.mention)
@@ -166,7 +226,7 @@ async def purge(ctx, user: discord.Member):
 	try:
 		any_to_delete = False
 		for channel in server.channels:
-			async for message in bot.logs_from(channel, before = ctx.message):
+			async for message in bot.logs_from(channel, limit = 1000, before = ctx.message):
 				if message.author == user:
 					await bot.delete_message(message)
 					any_to_delete = True
@@ -190,7 +250,7 @@ async def purge_from_channel(ctx, user: discord.Member):
 	try:
 		channel = ctx.message.channel
 		any_to_delete = False
-		async for message in bot.logs_from(channel, before = ctx.message):
+		async for message in bot.logs_from(channel, limit = 1000, before = ctx.message):
 			if message.author == user:
 				await bot.delete_message(message)
 				any_to_delete = True
@@ -202,10 +262,22 @@ async def purge_from_channel(ctx, user: discord.Member):
 	except discord.Forbidden:
 		await bot.say("I fear the limitations bestowed upon me are too great for such a task.")
 
+@bot.command()
+async def changename():
+	await bot.say("You're right. I've had this name for too long.")
+	current_nick = list(bot.servers)[0].me.nick
+	newnick = random.choice(BOTNAMES)
+	while newnick == current_nick:
+		newnick = random.choice(BOTNAMES)
+	await set_nick(newnick)
+
 @bot.event
 async def on_command_error(error, ctx):
 	if isinstance(error, commands.CommandNotFound):
 		await bot.send_message(ctx.message.channel, "I fear I know not of this '%s'. Is it perchance a new Hero?" % ctx.message.content[len(PREFIX):])
+	else:
+		owner = await bot.get_user_info(OWNER)
+		await bot.send_message(ctx.message.channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve. Methinks you would do well to consult %s on this matter." % owner.mention)
 
 bot.loop.create_task(get_match_data())
 bot.loop.create_task(change_nick())
