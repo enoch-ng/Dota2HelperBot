@@ -152,7 +152,7 @@ async def get_match_data():
 						radiant_name = "Radiant"
 
 					if "dire_team" in game:
-						dire_name = game["dire_team"]["dire_name"]
+						dire_name = game["dire_team"]["team_name"]
 					else:
 						dire_name = "Dire"
 
