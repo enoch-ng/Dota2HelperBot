@@ -146,13 +146,13 @@ async def get_match_data():
 				else:
 					# THIS SECTION FOR LOGGING
 					#############################
-					if "radiant_name" in game:
-						radiant_name = game["radiant_name"]
+					if "radiant_team" in game:
+						radiant_name = game["radiant_team"]["team_name"]
 					else:
 						radiant_name = "Radiant"
 
-					if "dire_name" in game:
-						dire_name = game["dire_name"]
+					if "dire_team" in game:
+						dire_name = game["dire_team"]["dire_name"]
 					else:
 						dire_name = "Dire"
 
