@@ -140,7 +140,7 @@ async def get_match_data():
 		games = response.json()["result"]["games"]
 		finished_matches = list(bot.ongoing_matches)
 		for game in games:
-			if (not FILTER_MATCHES or game["league_id"] in NOTABLE_LEAGUES) and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
+			if (not FILTER_MATCHES or game["league_id"] in notable_leagues) and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
 				if game["match_id"] in bot.ongoing_matches:
 					finished_matches.remove(game["match_id"])
 				else:
