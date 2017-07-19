@@ -197,7 +197,7 @@ async def get_match_data():
 			print("Match %s (%s vs. %s) finished" % (finished, radiant_name, dire_name))
 			#############################
 
-			if VICTORYMESSAGES:
+			if victorymessages:
 				await show_match_results(game)
 			bot.ongoing_matches.remove(finished)
 		await asyncio.sleep(interval)
