@@ -16,6 +16,7 @@ with open("data/settings.json") as json_data:
 	settings = json.load(json_data)
 	OWNER = settings["owner"]
 	TOKEN = settings["token"]
+	DEFAULT_SERVER = settings["default_server"]
 	JOIN_CHANNEL = settings["join_channel"]
 	MATCHES_CHANNEL = settings["matches_channel"]
 	PREFIX = settings["prefix"]
@@ -23,6 +24,8 @@ with open("data/settings.json") as json_data:
 	API_INTERVAL = settings["api_interval"]
 	APIKEY = settings["apikey"]
 	NOTABLE_LEAGUES = settings["notable_leagues"]
+	VICTORYMESSAGES = settings["victorymessages"]
+	NOREPEATMATCHES = settings["norepeatmatches"]
 
 DESC = "Dota2HelperBot, a Discord bot created by Blanedale"
 BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
@@ -185,7 +188,8 @@ async def get_match_data():
 			print("Match %s (%s vs. %s) finished" % (finished, radiant_name, dire_name))
 			#############################
 
-			await show_match_results(game)
+			if VICTORYMESSAGES:
+				await show_match_results(game)
 			bot.ongoing_matches.remove(finished)
 		await asyncio.sleep(interval)
 
@@ -203,15 +207,14 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-	if member.server.id == "330451340826509312":
-		channel = bot.get_channel("JOIN_CHANNEl")
+	if member.server.id == DEFAULT_SERVER:
+		channel = bot.get_channel(JOIN_CHANNEL)
 	else:
 		channel = member.server.default_channel
 	await bot.send_message(channel, "%s has joined the server. Welcome!" % member.mention)
 
 def is_allowed_by_hierarchy(server, mod, user):
 	is_special = mod == server.owner or mod.id == OWNER
-
 	return mod.top_role.position > user.top_role.position or is_special
 
 @bot.command(pass_context = True)
@@ -264,7 +267,7 @@ async def purgefromchannel(ctx, user: discord.Member):
 
 @bot.command()
 async def changename():
-	await bot.say("You're right. I've had this name for too long.")
+	await bot.say("Too long have I endured this moniker. It is time to start anew.")
 	current_nick = list(bot.servers)[0].me.nick
 	newnick = random.choice(BOTNAMES)
 	while newnick == current_nick:
