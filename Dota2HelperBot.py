@@ -40,6 +40,7 @@ MATCH_DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetail
 
 bot = commands.Bot(command_prefix = PREFIX, description = DESC)
 bot.ongoing_matches = []
+bot.next_interval = API_INTERVAL
 
 async def set_nick(newnick):
 	for server in bot.servers:
@@ -122,12 +123,13 @@ async def show_match_results(game):
 async def get_match_data():
 	await bot.wait_until_ready()
 	while not bot.is_closed:
+		await asyncio.sleep(bot.next_interval)
+		bot.next_interval = API_INTERVAL
 		response = requests.get(LIVE_LEAGUE_GAMES_URL, params = {"key": APIKEY})
 		try:
 			response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
 		except requests.exceptions.HTTPError as err:
 			print(err)
-			await asyncio.sleep(API_INTERVAL)
 			continue
 
 		# THIS SECTION FOR LOGGING
@@ -161,20 +163,20 @@ async def get_match_data():
 
 					await show_new_match(game)
 
-		interval = API_INTERVAL
 		for finished in finished_matches:
 			await asyncio.sleep(2)
 			# Subtract the extra time waited to preserve the 20-second interval, but not if doing so would cause the time until the next call to be less than 2 seconds
-			if interval > 4:
-				interval -= 2
+			if bot.next_interval > 4:
+				bot.next_interval -= 2
 
 			# Fetch specific game data
-			postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished, "key": APIKEY})
 			try:
+				postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished, "key": APIKEY})
 				postgame.raise_for_status()
-			except requests.exceptions.HTTPError as err:
+			except (ConnectionError, requests.exceptions.HTTPError) as err:
 				print(err)
 				continue # Just try again next time
+				
 			game = postgame.json()["result"]
 
 			# It seems that sometimes the match disappears from the GetLiveLeagueGames listing, but hasn't actually ended yet. I don't know why...
@@ -200,7 +202,6 @@ async def get_match_data():
 			if victorymessages:
 				await show_match_results(game)
 			bot.ongoing_matches.remove(finished)
-		await asyncio.sleep(interval)
 
 @bot.event
 async def on_ready():
