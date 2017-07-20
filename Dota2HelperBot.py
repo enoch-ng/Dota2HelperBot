@@ -285,12 +285,15 @@ async def changename():
 	await set_nick(newnick)
 
 @bot.command()
-async def tracked():
-	response = "Currently tracked games: "
-	for match in bot.ongoing_matches:
-		response += match + ", "
+async def ongoing():
+	if len(bot.ongoing_matches) == 0:
+		await bot.say("There are as yet no ongoing games.")
+	else:
+		response = "Ongoing games: "
+		for match in bot.ongoing_matches:
+			response += str(match) + ", "
 
-	await bot.say(response[:-2])
+		await bot.say(response[:-2])
 
 @bot.event
 async def on_command_error(error, ctx):
