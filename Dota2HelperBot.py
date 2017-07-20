@@ -25,6 +25,7 @@ with open("data/settings.json") as json_data:
 	APIKEY = settings["apikey"]
 	FILTER_MATCHES = settings["filter_matches"]
 	notable_leagues = settings["notable_leagues"]
+	filtergeneric = settings["filtergeneric"]
 	victorymessages = settings["victorymessages"]
 	norepeatmatches = settings["norepeatmatches"]
 
@@ -142,7 +143,9 @@ async def get_match_data():
 		games = response.json()["result"]["games"]
 		finished_matches = list(bot.ongoing_matches)
 		for game in games:
-			if (not FILTER_MATCHES or game["league_id"] in notable_leagues) and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
+			league_ok = not FILTER_MATCHES or game["league_id"] in notable_leagues
+			generic_ok = not filtergeneric or "radiant_team" in game or "dire_team" in game
+			if league_ok and generic_ok and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
 				if game["match_id"] in bot.ongoing_matches:
 					finished_matches.remove(game["match_id"])
 				else:
