@@ -163,10 +163,10 @@ async def get_match_data():
 
 		interval = API_INTERVAL
 		for finished in finished_matches:
-			await asyncio.sleep(1.5)
-			# Subtract the extra time waited to preserve the 20-second interval, but not if doing so would cause the time until the next call to be less than 1.5 seconds
-			if interval > 3:
-				interval -= 1.5
+			await asyncio.sleep(2)
+			# Subtract the extra time waited to preserve the 20-second interval, but not if doing so would cause the time until the next call to be less than 2 seconds
+			if interval > 4:
+				interval -= 2
 
 			# Fetch specific game data
 			postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished, "key": APIKEY})
