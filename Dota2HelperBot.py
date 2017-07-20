@@ -176,7 +176,7 @@ async def get_match_data():
 			except (ConnectionError, requests.exceptions.HTTPError) as err:
 				print(err)
 				continue # Just try again next time
-				
+
 			game = postgame.json()["result"]
 
 			# It seems that sometimes the match disappears from the GetLiveLeagueGames listing, but hasn't actually ended yet. I don't know why...
@@ -283,6 +283,14 @@ async def changename():
 	while newnick == current_nick:
 		newnick = random.choice(BOTNAMES)
 	await set_nick(newnick)
+
+@bot.command()
+async def tracked():
+	response = "Currently tracked games: "
+	for match in bot.ongoing_matches:
+		response += match + ", "
+
+	await bot.say(response[:-2])
 
 @bot.event
 async def on_command_error(error, ctx):
