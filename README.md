@@ -18,6 +18,7 @@ To use this bot, you need to create a file named "settings.json" in the data/ fo
 	"apikey": String representing your Steam API key
 	"filter_matches": Bool, determines whether the bot only reports on important matches (i.e. matches in notable leagues)
 	"notable_leagues": Array of ints representing the IDs of leagues you want to track
+	"filtergeneric": Bool, determines whether the bot filters out matches where neither team has a real name
 	"victorymessages": Bool, controls the victory messages setting (see below)
 	"norepeatmatches": Bool, controls the norepeatmatches setting (see below)
 }
