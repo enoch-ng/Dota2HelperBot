@@ -134,7 +134,8 @@ async def get_match_data():
 
 		# THIS SECTION FOR LOGGING
 		###############################
-		file = open("matchdata%s.txt" % time.time(), "w")
+		current_time = time.time()
+		file = open("matchdata%s.txt" % current_time, "w")
 		text = response.text.encode("utf-8")
 		file.write(str(text))
 		###############################
@@ -158,7 +159,7 @@ async def get_match_data():
 					else:
 						dire_name = "Dire"
 
-					print("Adding match %s to list (%s vs. %s)" % (game["match_id"], radiant_name, dire_name))
+					print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
 					#############################
 
 					await show_new_match(game)
@@ -196,7 +197,7 @@ async def get_match_data():
 			else:
 				dire_name = "Dire"
 
-			print("Match %s (%s vs. %s) finished" % (finished, radiant_name, dire_name))
+			print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished, radiant_name, dire_name))
 			#############################
 
 			if victorymessages:
