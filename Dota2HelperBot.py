@@ -70,7 +70,7 @@ class MatchList:
 
 		raise KeyError
 
-	def match_exists_with_teams(radiant_team, dire_team):
+	def match_exists_with_teams(self, radiant_team, dire_team):
 		for match in self.matches:
 			if match.radiant_team == radiant_team and match.dire_team == dire_team:
 				return True
@@ -216,11 +216,11 @@ async def get_match_data():
 					#############################
 					print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
 					#############################
-
-					bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name)
 					
 					if not (norepeatmatches and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name)):
 						await show_new_match(game, radiant_name, dire_name)
+
+					bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name)
 
 		for finished in finished_matches:
 			await asyncio.sleep(2)
