@@ -291,6 +291,9 @@ def is_allowed_by_hierarchy(server, mod, user):
 
 @bot.command(pass_context = True)
 async def purge(ctx, user: discord.Member):
+	"""Purges a user's messages from the server.
+
+	It doesn't search from the beginning of message history, so you may need to run it multiple times if you want to be thorough."""
 	server = ctx.message.server
 	author = ctx.message.author
 
@@ -315,6 +318,9 @@ async def purge(ctx, user: discord.Member):
 
 @bot.command(pass_context = True)
 async def purgefromchannel(ctx, user: discord.Member):
+	"""Purges a user's messages from the channel.
+
+	It doesn't search from the beginning of message history, so you may need to run it multiple times if you want to be thorough."""
 	server = ctx.message.server
 	author = ctx.message.author
 
@@ -339,6 +345,7 @@ async def purgefromchannel(ctx, user: discord.Member):
 
 @bot.command()
 async def changename():
+	"""Chooses a random new nickname for the bot."""
 	await bot.say("Too long have I endured this moniker. It is time to begin anew.")
 	current_nick = list(bot.servers)[0].me.nick
 	newnick = random.choice(BOTNAMES)
@@ -348,14 +355,15 @@ async def changename():
 
 @bot.command()
 async def ongoing():
+	"""Shows matches that are currently being tracked by the bot."""
 	if len(bot.ongoing_matches) == 0:
 		await bot.say("There are as yet no ongoing games.")
 	else:
 		response = "Ongoing games: "
 		for match in bot.ongoing_matches:
-			response += str(match.matchid) + ", "
+			response += "\n%s (%s vs. %s)" % (match.matchid, match.radiant_team, match.dire_team)
 
-		await bot.say(response[:-2])
+		await bot.say(response)
 
 @bot.event
 async def on_command_error(error, ctx):
