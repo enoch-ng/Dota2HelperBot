@@ -212,13 +212,14 @@ async def get_match_data():
 					else:
 						dire_name = "Dire"
 
-					if not (norepeatmatches and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name)):
-						# THIS SECTION FOR LOGGING
-						#############################
-						print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
-						#############################
+					# THIS SECTION FOR LOGGING
+					#############################
+					print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
+					#############################
 
-						bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name)
+					bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name)
+					
+					if not (norepeatmatches and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name)):
 						await show_new_match(game, radiant_name, dire_name)
 
 		for finished in finished_matches:
