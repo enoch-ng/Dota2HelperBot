@@ -4,7 +4,65 @@ import random
 import asyncio
 import requests
 import json
-import time # For logging only
+import time # For logging
+
+class Match:
+	def __init__(self, matchid, radiant_team, dire_team):
+		self.matchid = matchid
+		self.radiant_team = radiant_team
+		self.dire_team = dire_team
+
+class MatchList:
+	def __init__(self, original = None):
+		self.matches = []
+		if original is not None:
+			for original_match in original:
+				self.matches.append(original_match)
+
+	def __len__(self):
+		return len(self.matches)
+
+	def __getitem__(self, key):
+		if not isinstance(key, int):
+			raise TypeError
+		if key >= len(self.matches):
+			raise IndexError
+		return self.matches[key]
+
+	def __missing__(self):
+		pass # I don't know what this does
+
+	def __setitem__(self):
+		pass # Is this really necessary?
+
+	def __delitem__(self, key):
+		if not isinstance(key, int):
+			raise TypeError
+		if key >= len(self.matches):
+			raise IndexError
+		del self.matches[key]
+
+	def __iter__(self):
+		for match in self.matches:
+			yield match
+
+	def __contains__(self, matchid):
+		for match in self.matches:
+			if match.matchid == matchid:
+				return True
+
+		return False
+
+	def append(self, matchid, radiant_team, dire_team):
+		self.matches.append(Match(matchid, radiant_team, dire_team))
+
+	def remove(self, matchid):
+		for match in self.matches:
+			if match.matchid == matchid:
+				self.matches.remove(match)
+				return
+
+		raise KeyError
 
 try:
 	import discord
@@ -40,7 +98,7 @@ LIVE_LEAGUE_GAMES_URL = "https://api.steampowered.com/IDOTA2Match_570/GetLiveLea
 MATCH_DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
 
 bot = commands.Bot(command_prefix = PREFIX, description = DESC)
-bot.ongoing_matches = []
+bot.ongoing_matches = MatchList()
 bot.next_interval = API_INTERVAL
 
 async def set_nick(newnick):
@@ -77,7 +135,7 @@ async def show_new_match(game):
 	else:
 		dire_name = "Dire"
 
-	bot.ongoing_matches.append(game["match_id"])
+	bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name)
 
 	if game["series_type"] == 0:
 		series_desc = ""
@@ -142,7 +200,7 @@ async def get_match_data():
 		###############################
 
 		games = response.json()["result"]["games"]
-		finished_matches = list(bot.ongoing_matches)
+		finished_matches = MatchList(bot.ongoing_matches)
 		for game in games:
 			league_ok = not FILTER_MATCHES or game["league_id"] in notable_leagues
 			generic_ok = not filtergeneric or "radiant_team" in game or "dire_team" in game
@@ -175,7 +233,7 @@ async def get_match_data():
 
 			# Fetch specific game data
 			try:
-				postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished, "key": APIKEY})
+				postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished.matchid, "key": APIKEY})
 				postgame.raise_for_status()
 			except (ConnectionError, requests.exceptions.HTTPError) as err:
 				print(err)
@@ -185,7 +243,7 @@ async def get_match_data():
 
 			# It seems that sometimes the match disappears from the GetLiveLeagueGames listing, but hasn't actually ended yet. I don't know why...
 			if "radiant_win" not in game or "duration" not in game:
-				#print("Could not find match %s in GetLiveLeagueGames call, but it doesn't seem to have ended" % finished)
+				#print("Could not find match %s in GetLiveLeagueGames call, but it doesn't seem to have ended" % finished.matchid)
 				continue
 
 			# THIS SECTION FOR LOGGING
@@ -200,12 +258,12 @@ async def get_match_data():
 			else:
 				dire_name = "Dire"
 
-			print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished, radiant_name, dire_name))
+			print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
 			#############################
 
 			if victorymessages:
 				await show_match_results(game)
-			bot.ongoing_matches.remove(finished)
+			bot.ongoing_matches.remove(finished.matchid)
 
 @bot.event
 async def on_ready():
