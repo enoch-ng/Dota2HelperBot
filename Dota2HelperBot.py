@@ -353,7 +353,7 @@ async def ongoing():
 	else:
 		response = "Ongoing games: "
 		for match in bot.ongoing_matches:
-			response += str(match) + ", "
+			response += str(match.matchid) + ", "
 
 		await bot.say(response[:-2])
 
