@@ -6,6 +6,12 @@ import requests
 import json
 import time # For logging
 
+try:
+	import discord
+	from discord.ext import commands
+except ImportError:
+	print("Unable to start Dota2HelperBot. Check your discord.py installation.")
+
 class Match:
 	def __init__(self, matchid, radiant_team, dire_team):
 		self.matchid = matchid
@@ -64,11 +70,12 @@ class MatchList:
 
 		raise KeyError
 
-try:
-	import discord
-	from discord.ext import commands
-except ImportError:
-	print("Unable to start Dota2HelperBot. Check your discord.py installation.")
+	def match_exists_with_teams(radiant_team, dire_team):
+		for match in self.matches:
+			if match.radiant_team == radiant_team and match.dire_team == dire_team:
+				return True
+
+		return False
 
 with open("data/settings.json") as json_data:
 	settings = json.load(json_data)
@@ -116,7 +123,6 @@ async def change_nick():
 		await set_nick(newnick)
 		await asyncio.sleep(CHANGENICK_INTERVAL)
 
-# Unused for now. It's more convenient to have the one-server functionality for debugging purposes
 async def say_all_servers(channelid, msg):
 	for s in bot.servers:
 		if s.id == DEFAULT_SERVER:
@@ -124,19 +130,7 @@ async def say_all_servers(channelid, msg):
 		else:
 			await bot.send_message(s.default_channel, msg)
 
-async def show_new_match(game):
-	if "radiant_team" in game:
-		radiant_name = game["radiant_team"]["team_name"]
-	else:
-		radiant_name = "Radiant"
-
-	if "dire_team" in game:
-		dire_name = game["dire_team"]["team_name"]
-	else:
-		dire_name = "Dire"
-
-	bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name)
-
+async def show_new_match(game, radiant_name, dire_name):
 	if game["series_type"] == 0:
 		series_desc = ""
 	elif game["series_type"] == 1:
@@ -144,9 +138,9 @@ async def show_new_match(game):
 	elif game["series_type"] == 2:
 		series_desc = " (Game %s of 5)" % str(game["radiant_series_wins"] + game["dire_series_wins"] + 1)
 	else:
-		series_desc = " (unknown series type %s)" % str(game["series_type"])
+		series_desc = " (unknown series type %s)" % str(game["series_type"]) # I don't think this is possible
 
-	await bot.send_message(bot.get_channel(MATCHES_CHANNEL), "The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
+	await say_all_servers(MATCHES_CHANNEL, "The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
 
 async def show_match_results(game):
 	if "radiant_name" in game:
@@ -176,7 +170,7 @@ async def show_match_results(game):
 	else:
 		sec_string = " and %s seconds" % s
 
-	await bot.send_message(bot.get_channel(MATCHES_CHANNEL), "%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"]))
+	await say_all_servers(MATCHES_CHANNEL, "%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"]))
 
 # Get live game data from Valve's web API
 async def get_match_data():
@@ -208,8 +202,6 @@ async def get_match_data():
 				if game["match_id"] in bot.ongoing_matches:
 					finished_matches.remove(game["match_id"])
 				else:
-					# THIS SECTION FOR LOGGING
-					#############################
 					if "radiant_team" in game:
 						radiant_name = game["radiant_team"]["team_name"]
 					else:
@@ -220,10 +212,14 @@ async def get_match_data():
 					else:
 						dire_name = "Dire"
 
-					print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
-					#############################
+					if not (norepeatmatches and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name)):
+						# THIS SECTION FOR LOGGING
+						#############################
+						print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
+						#############################
 
-					await show_new_match(game)
+						bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name)
+						await show_new_match(game, radiant_name, dire_name)
 
 		for finished in finished_matches:
 			await asyncio.sleep(2)
@@ -361,17 +357,18 @@ async def ongoing():
 	else:
 		response = "Ongoing games: "
 		for match in bot.ongoing_matches:
-			response += "\n%s (%s vs. %s)" % (match.matchid, match.radiant_team, match.dire_team)
+			response += "\n%s vs. %s (Match %s)" % (match.radiant_team, match.dire_team, match.matchid)
 
 		await bot.say(response)
 
 @bot.event
 async def on_command_error(error, ctx):
+	channel = ctx.message.channel
 	if isinstance(error, commands.CommandNotFound):
-		await bot.send_message(ctx.message.channel, "I fear I know not of this '%s'. Is it perchance a new Hero?" % ctx.message.content[len(PREFIX):])
+		await bot.send_message(channel, "I fear I know not of this '%s'. Is it perchance a new Hero?" % ctx.message.content[len(PREFIX):])
 	else:
 		owner = await bot.get_user_info(OWNER)
-		await bot.send_message(ctx.message.channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve. Methinks you would do well to consult %s on this matter." % owner.mention)
+		await bot.send_message(channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve. Methinks you would do well to consult %s on this matter." % owner.mention)
 
 bot.loop.create_task(get_match_data())
 bot.loop.create_task(change_nick())
