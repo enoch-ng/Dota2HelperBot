@@ -32,13 +32,13 @@ Implemented commands:
 
 `changename` - Causes the bot to choose a random new nickname.
 
+`ongoing` - Shows matches that are currently being “tracked” by the bot.
+
 Unimplemented commands:
 
 `norepeatmatches on|off` - When this setting is enabled, the bot will not report on new matches whose participants match the participants of an ongoing match. Useful for handling duplicate “ghost” matches that occasionally appear in Valve’s match data.
 
 `victorymessages on|off` - When this setting is enabled, the bot will report the winner of a match once it ends, along with some details and a Dotabuff link.
-
-`tracked` - Shows matches that are currently being “tracked” by the bot.
 
 `untrack` - Removes all matches from the tracking list.
 
