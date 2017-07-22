@@ -232,7 +232,7 @@ async def get_match_data():
 			try:
 				postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished.matchid, "key": APIKEY})
 				postgame.raise_for_status()
-			except (socket.gaierror, NewConnectionError, ConnectionError, requests.exceptions.HTTPError) as err:
+			except Exception as err:
 				print(err)
 				continue # Just try again next time
 
