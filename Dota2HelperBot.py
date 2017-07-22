@@ -93,6 +93,8 @@ with open("data/settings.json") as json_data:
 	filtergeneric = settings["filtergeneric"]
 	victorymessages = settings["victorymessages"]
 	norepeatmatches = settings["norepeatmatches"]
+	savematchdata = settings["savematchdata"]
+	verbose = settings["verbose"]
 
 DESC = "Dota2HelperBot, a Discord bot created by Blanedale"
 BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
@@ -182,16 +184,15 @@ async def get_match_data():
 		try:
 			response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
 		except Exception as err:
-			print(err)
+			if verbose:
+				print(err)
 			continue
 
-		# THIS SECTION FOR LOGGING
-		###############################
-		current_time = time.time()
-		file = open("matchdata%s.txt" % current_time, "w")
-		text = response.text.encode("utf-8")
-		file.write(str(text))
-		###############################
+		if savematchdata:
+			current_time = time.time()
+			file = open("matchdata%s.txt" % current_time, "w")
+			text = response.text.encode("utf-8")
+			file.write(str(text))
 
 		games = response.json()["result"]["games"]
 		finished_matches = MatchList(bot.ongoing_matches)
@@ -212,10 +213,8 @@ async def get_match_data():
 					else:
 						dire_name = "Dire"
 
-					# THIS SECTION FOR LOGGING
-					#############################
-					print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
-					#############################
+					if verbose:
+						print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
 					
 					if not (norepeatmatches and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name)):
 						await show_new_match(game, radiant_name, dire_name)
@@ -233,30 +232,28 @@ async def get_match_data():
 				postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished.matchid, "key": APIKEY})
 				postgame.raise_for_status()
 			except Exception as err:
-				print(err)
+				if verbose:
+					print(err)
 				continue # Just try again next time
 
 			game = postgame.json()["result"]
 
 			# It seems that sometimes the match disappears from the GetLiveLeagueGames listing, but hasn't actually ended yet. I don't know why...
 			if "radiant_win" not in game or "duration" not in game:
-				#print("Could not find match %s in GetLiveLeagueGames call, but it doesn't seem to have ended" % finished.matchid)
 				continue
 
-			# THIS SECTION FOR LOGGING
-			#############################
-			if "radiant_name" in game:
-				radiant_name = game["radiant_name"]
-			else:
-				radiant_name = "Radiant"
+			if verbose:
+				if "radiant_name" in game:
+					radiant_name = game["radiant_name"]
+				else:
+					radiant_name = "Radiant"
 
-			if "dire_name" in game:
-				dire_name = game["dire_name"]
-			else:
-				dire_name = "Dire"
+				if "dire_name" in game:
+					dire_name = game["dire_name"]
+				else:
+					dire_name = "Dire"
 
-			print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
-			#############################
+				print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
 
 			if victorymessages:
 				await show_match_results(game)

@@ -21,6 +21,8 @@ To use this bot, you need to create a file named "settings.json" in the data/ fo
 	"filtergeneric": Bool, determines whether the bot filters out matches where neither team has a real name
 	"victorymessages": Bool, controls the victory messages setting (see below)
 	"norepeatmatches": Bool, controls the norepeatmatches setting (see below)
+	"savematchdata": Bool, controls logging of data obtained from API calls
+	"verbose": Bool, enables a bit more information in the program output
 }
 ```
 
