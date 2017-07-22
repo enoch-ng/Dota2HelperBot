@@ -180,16 +180,17 @@ async def get_match_data():
 	while not bot.is_closed:
 		await asyncio.sleep(bot.next_interval)
 		bot.next_interval = API_INTERVAL
-		response = requests.get(LIVE_LEAGUE_GAMES_URL, params = {"key": APIKEY})
 		try:
+			response = requests.get(LIVE_LEAGUE_GAMES_URL, params = {"key": APIKEY})
 			response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
 		except Exception as err:
 			if verbose:
 				print(err)
 			continue
 
+		current_time = time.time()
+
 		if savematchdata:
-			current_time = time.time()
 			file = open("matchdata%s.txt" % current_time, "w")
 			text = response.text.encode("utf-8")
 			file.write(str(text))
