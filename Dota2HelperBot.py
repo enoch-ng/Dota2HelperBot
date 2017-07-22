@@ -181,7 +181,7 @@ async def get_match_data():
 		response = requests.get(LIVE_LEAGUE_GAMES_URL, params = {"key": APIKEY})
 		try:
 			response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
-		except requests.exceptions.HTTPError as err:
+		except Exception as err:
 			print(err)
 			continue
 
