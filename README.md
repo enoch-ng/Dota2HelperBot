@@ -4,17 +4,30 @@ Dependencies:
 * Python >=3.5
 * discord.py
 
-To use this bot, you need to create a file named "settings.json" in the data/ folder. The complete list of options is as follows:
+To use this bot, you need to create a file named "settings.json" in the data/ folder, like so:
+
+```
+{
+	"token": <your token here>
+	"apikey": <your Steam user API key here>
+}
+```
+
+In order to obtain a token, create a new bot user here: https://discordapp.com/developers/applications/me
+
+In order to obtain a Steam user API key, go here: https://steamcommunity.com/dev/apikey
+
+The complete list of options is as follows:
 ```
 {
 	"token": String that will be the bot's token
 	"prefix": String representing the command prefix
 	"owner": String representing your Discord user ID
-	"default_server": ID of the server to use for channel-specific messages. Leave blank for the bot to always post updates in the default channel
-	"join_channel": ID of the channel you want the bot to post welcome messages in
-	"matches_channel": ID of the channel you want the bot to post match notifications in
-	"changenick_interval": Number of seconds to wait before changing nickname again
-	"api_interval": Number of seconds to wait before making another call to Valve's API (recommended to be greater than 1)
+	"default_server": String, ID of the server to use for channel-specific messages. Leave blank for the bot to always post updates in the default channel
+	"join_channel": String, ID of the channel you want the bot to post welcome messages in
+	"matches_channel": String, ID of the channel you want the bot to post match notifications in
+	"changenick_interval": Int, number of seconds to wait before changing nickname again
+	"api_interval": Int, number of seconds to wait before making another call to Valve's API (recommended to be greater than 1)
 	"apikey": String representing your Steam API key
 	"filter_matches": Bool, determines whether the bot only reports on important matches (i.e. matches in notable leagues)
 	"notable_leagues": Array of ints representing the IDs of leagues you want to track
@@ -26,7 +39,7 @@ To use this bot, you need to create a file named "settings.json" in the data/ fo
 }
 ```
 
-Of these fields, only `token` and `apikey` are required (though putting something in `notable_leagues` is highly recommended unless you are disabling `no_repeat_matches`). `prefix` defaults to semicolon if left blank.
+Of these fields, only `token` and `apikey` are required (though adding `notable_leagues` is highly recommended unless you are disabling `no_repeat_matches`). `prefix` defaults to semicolon if left blank or not provided.
 
 ## Implemented commands
 
