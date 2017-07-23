@@ -95,7 +95,7 @@ defaults = {
 	"join_channel": "",
 	"matches_channel": "",
 	"changenick_interval": 600,
-	"api_interval": 20
+	"api_interval": 20,
 	"apikey": "",
 	"filter_matches": True,
 	"notable_leagues": [],
@@ -124,18 +124,16 @@ if not settings["token"]:
 	print("No valid token was found. Please make sure a Discord bot user token is supplied in data/settings.json.")
 	raise SystemExit
 
-if not settings["prefix"]:
-	print("The bot's prefix cannot be blank. Please review your settings and try again.")
-	raise SystemExit
-
 if not settings["apikey"]:
 	print("No valid API key was found. Please make sure a Steam user API key is supplied in data/settings.json.")
 	raise SystemExit
 
-bot = commands.Bot(command_prefix = settings["prefix"], description = DESC)
+if not settings["prefix"]:
+	settings["prefix"] = ";"
 
-if not settings["owner"]:
-	settings[owner] = bot.application_info().owner
+# A blank "owner" field can be handled later, when the bot is up and running
+
+bot = commands.Bot(command_prefix = settings["prefix"], description = DESC)
 
 bot.ongoing_matches = MatchList()
 bot.next_interval = settings["api_interval"]
@@ -228,7 +226,7 @@ async def get_match_data():
 		games = response.json()["result"]["games"]
 		finished_matches = MatchList(bot.ongoing_matches)
 		for game in games:
-			league_ok = not settings["filter_matches"] or game["league_id"] in notable_leagues
+			league_ok = not settings["filter_matches"] or game["league_id"] in settings["notable_leagues"]
 			generic_ok = not settings["filter_generic"] or "radiant_team" in game or "dire_team" in game
 			if league_ok and generic_ok and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
 				if game["match_id"] in bot.ongoing_matches:
@@ -292,7 +290,10 @@ async def get_match_data():
 
 @bot.event
 async def on_ready():
-	print()
+	if not settings["owner"]:
+		appinfo = await bot.application_info()
+		owner = appinfo.owner
+
 	print("Dota2HelperBot, a Discord bot created by Blanedale")
 	print()
 	print("Connected to the following servers:")
@@ -401,4 +402,4 @@ async def on_command_error(error, ctx):
 
 bot.loop.create_task(get_match_data())
 bot.loop.create_task(change_nick())
-bot.run(TOKEN)
+bot.run(settings["token"])

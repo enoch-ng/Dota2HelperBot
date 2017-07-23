@@ -7,7 +7,7 @@ Dependencies:
 To use this bot, you need to create a file named "settings.json" in the data/ folder. The complete list of options is as follows:
 ```
 {
-	"token: String that will be the bot's token
+	"token": String that will be the bot's token
 	"prefix": String representing the command prefix
 	"owner": String representing your Discord user ID
 	"default_server": ID of the server to use for channel-specific messages. Leave blank for the bot to always post updates in the default channel
@@ -25,6 +25,8 @@ To use this bot, you need to create a file named "settings.json" in the data/ fo
 	"verbose": Bool, enables a bit more information in the program output
 }
 ```
+
+Of these fields, only `token` and `apikey` are required (though putting something in `notable_leagues` is highly recommended unless you are disabling `no_repeat_matches`). `prefix` defaults to semicolon if left blank.
 
 Implemented commands:
 
