@@ -13,10 +13,11 @@ except ImportError:
 	print("Unable to start Dota2HelperBot. Check your discord.py installation.")
 
 class Match:
-	def __init__(self, matchid, radiant_team, dire_team):
+	def __init__(self, matchid, radiant_team, dire_team, gameno):
 		self.matchid = matchid
 		self.radiant_team = radiant_team
 		self.dire_team = dire_team
+		self.gameno = gameno
 
 class MatchList:
 	def __init__(self, original = None):
@@ -59,8 +60,8 @@ class MatchList:
 
 		return False
 
-	def append(self, matchid, radiant_team, dire_team):
-		self.matches.append(Match(matchid, radiant_team, dire_team))
+	def append(self, matchid, radiant_team, dire_team, gameno):
+		self.matches.append(Match(matchid, radiant_team, dire_team, gameno))
 
 	def remove(self, matchid):
 		for match in self.matches:
@@ -70,9 +71,9 @@ class MatchList:
 
 		raise KeyError
 
-	def match_exists_with_teams(self, radiant_team, dire_team):
+	def match_exists_with_teams(self, radiant_team, dire_team, gameno):
 		for match in self.matches:
-			if match.radiant_team == radiant_team and match.dire_team == dire_team:
+			if match.radiant_team == radiant_team and match.dire_team == dire_team and match.gameno == gameno:
 				return True
 
 		return False
@@ -142,15 +143,20 @@ async def set_nick(newnick):
 	for server in bot.servers:
 		await bot.change_nickname(server.me, "%s Bot" % newnick)
 
+def choose_nick():
+	current_nick = list(bot.servers)[0].me.nick # Since the nickname should be the same for all servers, it shouldn't matter that bot.servers isn't always in the same order
+	newnick = random.choice(BOTNAMES)
+	while newnick == current_nick:
+		newnick = random.choice(BOTNAMES) # Keep rerolling until we get a different name
+	return newnick
+
 # Change nickname every 10 minutes
 async def change_nick():
 	await bot.wait_until_ready()
 	while not bot.is_closed:
-		current_nick = list(bot.servers)[0].me.nick # Since the nickname should be the same for all servers, it shouldn't matter that bot.servers isn't always in the same order
-		newnick = random.choice(BOTNAMES)
-		while newnick == current_nick:
-			newnick = random.choice(BOTNAMES) # Keep rerolling until we get a different name
-		await set_nick(newnick)
+		serverlist = list(bot.servers)
+		if len(serverlist) > 0:
+			await set_nick(choose_nick())
 		await asyncio.sleep(settings["changenick_interval"])
 
 async def say_all_servers(channelid, msg):
@@ -160,13 +166,13 @@ async def say_all_servers(channelid, msg):
 		else:
 			await bot.send_message(s.default_channel, msg)
 
-async def show_new_match(game, radiant_name, dire_name):
+async def show_new_match(game, radiant_name, dire_name, gameno):
 	if game["series_type"] == 0:
 		series_desc = ""
 	elif game["series_type"] == 1:
-		series_desc = " (Game %s of 3)" % str(game["radiant_series_wins"] + game["dire_series_wins"] + 1)
+		series_desc = " (Game %s of 3)" % str(gameno)
 	elif game["series_type"] == 2:
-		series_desc = " (Game %s of 5)" % str(game["radiant_series_wins"] + game["dire_series_wins"] + 1)
+		series_desc = " (Game %s of 5)" % str(gameno)
 	else:
 		series_desc = " (unknown series type %s)" % str(game["series_type"]) # I don't think this is possible
 
@@ -242,13 +248,15 @@ async def get_match_data():
 					else:
 						dire_name = "Dire"
 
-					if settings["verbose"]:
-						print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
-					
-					if not (settings["no_repeat_matches"] and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name)):
-						await show_new_match(game, radiant_name, dire_name)
+					gameno = game["radiant_series_wins"] + game["dire_series_wins"] + 1
 
-					bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name)
+					if settings["verbose"]:
+						print("[%s] Adding match %s to list (%s vs. %s, Game %s)" % (current_time, game["match_id"], radiant_name, dire_name, gameno))
+					
+					if not (settings["no_repeat_matches"] and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name, gameno)):
+						await show_new_match(game, radiant_name, dire_name, gameno)
+
+					bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name, gameno)
 
 		for finished in finished_matches:
 			await asyncio.sleep(2)
@@ -310,6 +318,10 @@ async def on_member_join(member):
 	else:
 		channel = member.server.default_channel
 	await bot.send_message(channel, "%s has joined the server. Welcome!" % member.mention)
+
+@bot.event
+async def on_server_join(server):
+	await set_nick(choose_nick())
 
 def is_allowed_by_hierarchy(server, mod, user):
 	is_special = mod == server.owner or mod.id == settings["owner"]
@@ -373,11 +385,7 @@ async def purgefromchannel(ctx, user: discord.Member):
 async def changename():
 	"""Chooses a random new nickname for the bot."""
 	await bot.say("Too long have I endured this moniker. It is time to begin anew.")
-	current_nick = list(bot.servers)[0].me.nick
-	newnick = random.choice(BOTNAMES)
-	while newnick == current_nick:
-		newnick = random.choice(BOTNAMES)
-	await set_nick(newnick)
+	await set_nick(choose_nick())
 
 @bot.command()
 async def ongoing():

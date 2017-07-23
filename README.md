@@ -28,7 +28,7 @@ To use this bot, you need to create a file named "settings.json" in the data/ fo
 
 Of these fields, only `token` and `apikey` are required (though putting something in `notable_leagues` is highly recommended unless you are disabling `no_repeat_matches`). `prefix` defaults to semicolon if left blank.
 
-Implemented commands:
+## Implemented commands
 
 `purge` - Purges a user’s messages from the server. Actually, it only searches the last 1000 messages of each channel, so if the user has been in the server for a long time you may need to run the command multiple times if you want to be thorough.
 
@@ -38,7 +38,7 @@ Implemented commands:
 
 `ongoing` - Shows matches that are currently being “tracked” by the bot.
 
-Unimplemented commands:
+## Unimplemented commands
 
 `norepeatmatches on|off` - When this setting is enabled, the bot will not report on new matches whose participants match the participants of an ongoing match. Useful for handling duplicate “ghost” matches that occasionally appear in Valve’s match data.
 
@@ -51,3 +51,10 @@ Unimplemented commands:
 `predict radiant|dire` - Sets your prediction for the specified team.
 
 `score` - Shows the given user’s prediction record.
+
+## How to find the ID of something in Discord:
+
+1. In User Settings > Appearance, under "Advanced", enable the Developer Mode option.
+2. Right-click on the channel or server you want to get the ID of and select Copy ID.
+3. Paste the ID wherever you want. Feel free to disable the Developer Mode option if you don't need it anymore.
+
