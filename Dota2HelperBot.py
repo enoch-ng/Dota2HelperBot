@@ -77,25 +77,6 @@ class MatchList:
 
 		return False
 
-with open("data/settings.json") as json_data:
-	settings = json.load(json_data)
-	OWNER = settings["owner"]
-	TOKEN = settings["token"]
-	DEFAULT_SERVER = settings["default_server"]
-	JOIN_CHANNEL = settings["join_channel"]
-	MATCHES_CHANNEL = settings["matches_channel"]
-	PREFIX = settings["prefix"]
-	CHANGENICK_INTERVAL = settings["changenick_interval"]
-	API_INTERVAL = settings["api_interval"]
-	APIKEY = settings["apikey"]
-	FILTER_MATCHES = settings["filter_matches"]
-	notable_leagues = settings["notable_leagues"]
-	filtergeneric = settings["filtergeneric"]
-	victorymessages = settings["victorymessages"]
-	norepeatmatches = settings["norepeatmatches"]
-	savematchdata = settings["savematchdata"]
-	verbose = settings["verbose"]
-
 DESC = "Dota2HelperBot, a Discord bot created by Blanedale"
 BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
 	"Bruni", "Buster", "Edith", "Ester", "Flo", "Francis", "Francisco", "Gil",
@@ -106,9 +87,58 @@ BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
 LIVE_LEAGUE_GAMES_URL = "https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v0001/"
 MATCH_DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
 
-bot = commands.Bot(command_prefix = PREFIX, description = DESC)
+defaults = {
+	"token": "",
+	"prefix": ";",
+	"owner": "",
+	"default_server": "",
+	"join_channel": "",
+	"matches_channel": "",
+	"changenick_interval": 600,
+	"api_interval": 20
+	"apikey": "",
+	"filter_matches": True,
+	"notable_leagues": [],
+	"filter_generic": True,
+	"victory_messages": True,
+	"no_repeat_matches": True,
+	"save_match_data": True,
+	"verbose": True
+}
+
+settings = {}
+
+with open("data/settings.json") as json_data:
+	file = json.load(json_data)
+	keys = ["token", "prefix", "owner", "default_server", "join_channel",
+		"matches_channel", "changenick_interval", "api_interval", "apikey",
+		"filter_matches", "notable_leagues", "filter_generic",
+		"victory_messages", "no_repeat_matches", "save_match_data", "verbose"]
+	for key in keys:
+		if key in file:
+			settings[key] = file[key]
+		else:
+			settings[key] = defaults[key]
+
+if not settings["token"]:
+	print("No valid token was found. Please make sure a Discord bot user token is supplied in data/settings.json.")
+	raise SystemExit
+
+if not settings["prefix"]:
+	print("The bot's prefix cannot be blank. Please review your settings and try again.")
+	raise SystemExit
+
+if not settings["apikey"]:
+	print("No valid API key was found. Please make sure a Steam user API key is supplied in data/settings.json.")
+	raise SystemExit
+
+bot = commands.Bot(command_prefix = settings["prefix"], description = DESC)
+
+if not settings["owner"]:
+	settings[owner] = bot.application_info().owner
+
 bot.ongoing_matches = MatchList()
-bot.next_interval = API_INTERVAL
+bot.next_interval = settings["api_interval"]
 
 async def set_nick(newnick):
 	for server in bot.servers:
@@ -123,11 +153,11 @@ async def change_nick():
 		while newnick == current_nick:
 			newnick = random.choice(BOTNAMES) # Keep rerolling until we get a different name
 		await set_nick(newnick)
-		await asyncio.sleep(CHANGENICK_INTERVAL)
+		await asyncio.sleep(settings["changenick_interval"])
 
 async def say_all_servers(channelid, msg):
 	for s in bot.servers:
-		if s.id == DEFAULT_SERVER:
+		if s.id == settings["default_server"] and channelid:
 			await bot.send_message(bot.get_channel(channelid), msg)
 		else:
 			await bot.send_message(s.default_channel, msg)
@@ -142,7 +172,7 @@ async def show_new_match(game, radiant_name, dire_name):
 	else:
 		series_desc = " (unknown series type %s)" % str(game["series_type"]) # I don't think this is possible
 
-	await say_all_servers(MATCHES_CHANNEL, "The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
+	await say_all_servers(settings["matches_channel"], "The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
 
 async def show_match_results(game):
 	if "radiant_name" in game:
@@ -172,25 +202,25 @@ async def show_match_results(game):
 	else:
 		sec_string = " and %s seconds" % s
 
-	await say_all_servers(MATCHES_CHANNEL, "%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"]))
+	await say_all_servers(settings["matches_channel"], "%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"]))
 
 # Get live game data from Valve's web API
 async def get_match_data():
 	await bot.wait_until_ready()
 	while not bot.is_closed:
 		await asyncio.sleep(bot.next_interval)
-		bot.next_interval = API_INTERVAL
+		bot.next_interval = settings["api_interval"]
 		try:
-			response = requests.get(LIVE_LEAGUE_GAMES_URL, params = {"key": APIKEY})
+			response = requests.get(LIVE_LEAGUE_GAMES_URL, params = {"key": settings["apikey"]})
 			response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
 		except Exception as err:
-			if verbose:
+			if settings["verbose"]:
 				print(err)
 			continue
 
 		current_time = time.time()
 
-		if savematchdata:
+		if settings["save_match_data"]:
 			file = open("matchdata%s.txt" % current_time, "w")
 			text = response.text.encode("utf-8")
 			file.write(str(text))
@@ -198,8 +228,8 @@ async def get_match_data():
 		games = response.json()["result"]["games"]
 		finished_matches = MatchList(bot.ongoing_matches)
 		for game in games:
-			league_ok = not FILTER_MATCHES or game["league_id"] in notable_leagues
-			generic_ok = not filtergeneric or "radiant_team" in game or "dire_team" in game
+			league_ok = not settings["filter_matches"] or game["league_id"] in notable_leagues
+			generic_ok = not settings["filter_generic"] or "radiant_team" in game or "dire_team" in game
 			if league_ok and generic_ok and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
 				if game["match_id"] in bot.ongoing_matches:
 					finished_matches.remove(game["match_id"])
@@ -214,10 +244,10 @@ async def get_match_data():
 					else:
 						dire_name = "Dire"
 
-					if verbose:
+					if settings["verbose"]:
 						print("[%s] Adding match %s to list (%s vs. %s)" % (current_time, game["match_id"], radiant_name, dire_name))
 					
-					if not (norepeatmatches and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name)):
+					if not (settings["no_repeat_matches"] and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name)):
 						await show_new_match(game, radiant_name, dire_name)
 
 					bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name)
@@ -230,10 +260,10 @@ async def get_match_data():
 
 			# Fetch specific game data
 			try:
-				postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished.matchid, "key": APIKEY})
+				postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished.matchid, "key": settings["apikey"]})
 				postgame.raise_for_status()
 			except Exception as err:
-				if verbose:
+				if settings["verbose"]:
 					print(err)
 				continue # Just try again next time
 
@@ -243,7 +273,7 @@ async def get_match_data():
 			if "radiant_win" not in game or "duration" not in game:
 				continue
 
-			if verbose:
+			if settings["verbose"]:
 				if "radiant_name" in game:
 					radiant_name = game["radiant_name"]
 				else:
@@ -256,7 +286,7 @@ async def get_match_data():
 
 				print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
 
-			if victorymessages:
+			if settings["victory_messages"]:
 				await show_match_results(game)
 			bot.ongoing_matches.remove(finished.matchid)
 
@@ -274,14 +304,14 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-	if member.server.id == DEFAULT_SERVER:
-		channel = bot.get_channel(JOIN_CHANNEL)
+	if member.server.id == settings["default_server"] and settings["join_channel"]:
+		channel = bot.get_channel(settings["join_channel"])
 	else:
 		channel = member.server.default_channel
 	await bot.send_message(channel, "%s has joined the server. Welcome!" % member.mention)
 
 def is_allowed_by_hierarchy(server, mod, user):
-	is_special = mod == server.owner or mod.id == OWNER
+	is_special = mod == server.owner or mod.id == settings["owner"]
 	return mod.top_role.position > user.top_role.position or is_special
 
 @bot.command(pass_context = True)
@@ -364,9 +394,9 @@ async def ongoing():
 async def on_command_error(error, ctx):
 	channel = ctx.message.channel
 	if isinstance(error, commands.CommandNotFound):
-		await bot.send_message(channel, "I fear I know not of this '%s'. Is it perchance a new Hero?" % ctx.message.content[len(PREFIX):])
+		await bot.send_message(channel, "I fear I know not of this '%s'. Is it perchance a new Hero?" % ctx.message.content[len(settings["prefix"]):])
 	else:
-		owner = await bot.get_user_info(OWNER)
+		owner = await bot.get_user_info(settings["owner"])
 		await bot.send_message(channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve. Methinks you would do well to consult %s on this matter." % owner.mention)
 
 bot.loop.create_task(get_match_data())

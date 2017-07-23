@@ -4,24 +4,24 @@ Dependencies:
 * Python >=3.5
 * discord.py
 
-To use this bot, you need to create a file named "settings.json" in the data/ folder with the following fields:
+To use this bot, you need to create a file named "settings.json" in the data/ folder. The complete list of options is as follows:
 ```
 {
-	"owner": String representing your Discord user ID
 	"token: String that will be the bot's token
+	"prefix": String representing the command prefix
+	"owner": String representing your Discord user ID
 	"default_server": ID of the server to use for channel-specific messages. Leave blank for the bot to always post updates in the default channel
 	"join_channel": ID of the channel you want the bot to post welcome messages in
 	"matches_channel": ID of the channel you want the bot to post match notifications in
-	"prefix": String representing the command prefix
 	"changenick_interval": Number of seconds to wait before changing nickname again
 	"api_interval": Number of seconds to wait before making another call to Valve's API (recommended to be greater than 1)
 	"apikey": String representing your Steam API key
 	"filter_matches": Bool, determines whether the bot only reports on important matches (i.e. matches in notable leagues)
 	"notable_leagues": Array of ints representing the IDs of leagues you want to track
-	"filtergeneric": Bool, determines whether the bot filters out matches where neither team has a real name
-	"victorymessages": Bool, controls the victory messages setting (see below)
-	"norepeatmatches": Bool, controls the norepeatmatches setting (see below)
-	"savematchdata": Bool, controls logging of data obtained from API calls
+	"filter_generic": Bool, determines whether the bot filters out matches where neither team has a real name
+	"victory_messages": Bool, controls the victory messages setting (see below)
+	"no_repeat_matches": Bool, controls the norepeatmatches setting (see below)
+	"save_match_data": Bool, controls logging of data obtained from API calls
 	"verbose": Bool, enables a bit more information in the program output
 }
 ```
