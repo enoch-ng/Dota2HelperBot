@@ -102,7 +102,7 @@ defaults = {
 	"filter_generic": True,
 	"victory_messages": True,
 	"no_repeat_matches": True,
-	"save_match_data": True,
+	"save_match_data": False,
 	"verbose": True
 }
 
