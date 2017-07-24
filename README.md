@@ -59,6 +59,8 @@ Of these fields, only `token` and `apikey` are required. `prefix` defaults to se
 
 `victorymessages` - Turns the victory messages on or off. When used without an argument, shows current setting. Use "off", "no", or "false" to turn victory messages off. Anything else turns it on.
 
+`hidewinner` - Controls whether the bot omits the winner, duration, and final score from the victory message. When used without an argument, shows current setting. Use "off", "no", or "false" to turn welcome messages off. Anything else turns it on.
+
 Any action that changes a server-specific setting must be performed by a server admin or the bot owner.
 
 ## Unimplemented commands
@@ -79,6 +81,7 @@ Any action that changes a server-specific setting must be performed by a server 
 
 `leagues` - Shows the list of notable leagues.
 
+
 ## Tips
 
 I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`. On Windows, try `set PYTHONIOENCODING="utf-8"`.
@@ -88,3 +91,4 @@ I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in o
 * Implement unimplemented commands
 * Better error messages when a command is used incorrectly
 * Ensure that the bot behaves as expected when invalid token or Steam API key values are used
+* Implement a better way to change server-specific setting features without having to discard existing server-specific settings

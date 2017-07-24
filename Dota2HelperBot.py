@@ -43,7 +43,8 @@ SERVER_DEFAULTS = {
 	"welcome_channel": "",
 	"matches_channel": "",
 	"welcome_messages": False,
-	"victory_messages": True
+	"victory_messages": True,
+	"hide_winner": False
 }
 
 class Match:
@@ -180,6 +181,10 @@ def set_victory_messages(server, option):
 	server_settings_list[server.id]["victory_messages"] = option
 	save_server_settings()
 
+def set_hide_winner(server, option):
+	server_settings_list[server.id]["hide_winner"] = option
+	save_server_settings()
+
 async def set_nick(newnick):
 	for server in bot.servers:
 		await bot.change_nickname(server.me, "%s Bot" % newnick)
@@ -211,9 +216,22 @@ async def say_welcome_channel(server, msg):
 	else:
 		await bot.send_message(server.default_channel, msg)
 
-async def say_matches_channel(msg, condition = None):
+async def say_match_start(msg):
 	for s in bot.servers:
-		if not condition or server_settings_list[s.id][condition]:
+		matches_channel = server_settings_list[s.id]["matches_channel"]
+		if matches_channel:
+			try:
+				await bot.send_message(bot.get_channel(matches_channel), msg)
+			except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
+				await bot.send_message(s.default_channel, "I wish to post in the designated channel for match updates but am unable to, for I lack the required permissions (or else the channel does not exist).")
+				await bot.send_message(s.default_channel, msg)
+		else:
+			await bot.send_message(s.default_channel, msg)
+
+async def say_victory_message(msg_winner, msg_no_winner):
+	for s in bot.servers:
+		if server_settings_list[s.id]["victory_messages"]:
+			msg = msg_no_winner if server_settings_list[s.id]["hide_winner"] else msg_winner
 			matches_channel = server_settings_list[s.id]["matches_channel"]
 			if matches_channel:
 				try:
@@ -234,7 +252,7 @@ async def show_new_match(game, radiant_name, dire_name, gameno):
 	else:
 		series_desc = " (unknown series type %s)" % str(game["series_type"]) # I don't think this is possible
 
-	await say_matches_channel("The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
+	await say_match_start("The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
 
 async def show_match_results(game):
 	if "radiant_name" in game:
@@ -264,7 +282,9 @@ async def show_match_results(game):
 	else:
 		sec_string = " and %s seconds" % s
 
-	await say_matches_channel("%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"]), "victory_messages")
+	msg_winner = "%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"])
+	msg_no_winner = "%s vs. %s has ended. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, game["match_id"])
+	await say_victory_message(msg_winner, msg_no_winner)
 
 # Get live game data from Valve's web API
 async def get_match_data():
@@ -562,6 +582,29 @@ async def victorymessages(ctx, argument = None):
 			else:
 				set_victory_messages(server, True)
 				await bot.say("Victory messages are now enabled.")
+		else:
+			await bot.say("You have not the authority to issue such a command.")
+
+@bot.command(pass_context = True)
+async def hidewinner(ctx, argument = None):
+	"""Controls whether or not to omit match results.
+
+	When used without an argument, shows current setting. Use "off", "no", or "false" to turn this feature off. Anything else turns it on."""
+	server = ctx.message.server
+	if not argument:
+		if server_settings_list[server.id]["hide_winner"]:
+			await bot.say("Victory messages are currently configured to hide the result.")
+		else:
+			await bot.say("Victory messages are currently configured to show the result.")
+	else:
+		author = ctx.message.author
+		if is_owner(author) or is_admin(author):
+			if argument == "off" or argument == "no" or argument == "false":
+				set_hide_winner(server, False)
+				await bot.say("Victory messages are now configured to show the result.")
+			else:
+				set_hide_winner(server, True)
+				await bot.say("Victory messages are now configured to hide the result.")
 		else:
 			await bot.say("You have not the authority to issue such a command.")
 
