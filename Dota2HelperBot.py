@@ -401,6 +401,8 @@ async def on_ready():
 	print("To add this bot to a server, go to: https://discordapp.com/oauth2/authorize?&client_id=%s&scope=bot" % bot.user.id)
 	print()
 
+	await bot.change_presence(game = discord.Game(name = "Type %shelp" % settings["prefix"]))
+
 @bot.event
 async def on_member_join(member):
 	serv = member.server
