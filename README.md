@@ -4,6 +4,10 @@ Dependencies:
 * Python >=3.5
 * discord.py
 
+Get Python here: https://www.python.org/downloads/
+
+For more information on installing discord.py, go here: https://github.com/Rapptz/discord.py
+
 To use this bot, you need to create a file named "settings.json" in the data/ folder, like so:
 
 ```
@@ -35,7 +39,7 @@ The complete list of options is as follows:
 }
 ```
 
-Of these fields, only `token` and `apikey` are required (though adding `notable_leagues` is highly recommended unless you are disabling `no_repeat_matches`). `prefix` defaults to semicolon if left blank or not provided.
+Of these fields, only `token` and `apikey` are required. `prefix` defaults to semicolon if left blank or not provided.
 
 ## Implemented commands
 
@@ -61,7 +65,7 @@ Any action that changes a server-specific setting must be performed by a server 
 
 `contact` - Sends a message to the bot owner.
 
-`untrack` - Removes all matches from the tracking list.
+`untrack` - Removes all matches from the tracking list. Can only be used by the bot owner.
 
 `status` - Shows the game state of all currently tracked matches.
 
@@ -77,9 +81,10 @@ Any action that changes a server-specific setting must be performed by a server 
 
 ## Tips
 
-I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`, or on Windows, try `set PYTHONIOENCODING="utf-8"`.
+I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`. On Windows, try `set PYTHONIOENCODING="utf-8"`.
 
 ## Todo
 
+* Implement unimplemented commands
 * Better error messages when a command is used incorrectly
 * Ensure that the bot behaves as expected when invalid token or Steam API key values are used
