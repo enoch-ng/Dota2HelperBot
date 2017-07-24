@@ -114,13 +114,17 @@ class MatchList:
 
 settings = {}
 
-with open("data/settings.json") as json_data:
-	file = json.load(json_data)
-	for key in KEYS:
-		if key in file:
-			settings[key] = file[key]
-		else:
-			settings[key] = BOT_DEFAULTS[key]
+try:
+	with open("data/settings.json") as json_data:
+		file = json.load(json_data)
+		for key in KEYS:
+			if key in file:
+				settings[key] = file[key]
+			else:
+				settings[key] = BOT_DEFAULTS[key]
+except FileNotFoundError:
+	print("You need to create a file named settings.json in the data folder (if there is none, create one). Please see the README for more information.")
+	raise SystemExit
 
 if not settings["token"]:
 	print("No valid token was found. Please make sure a Discord bot user token is supplied in data/settings.json.")
