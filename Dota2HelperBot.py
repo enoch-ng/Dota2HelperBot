@@ -12,6 +12,40 @@ try:
 except ImportError:
 	print("Unable to start Dota2HelperBot. Check your discord.py installation.")
 
+DESC = "Dota2HelperBot, a Discord bot created by Blanedale"
+BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
+	"Bruni", "Buster", "Edith", "Ester", "Flo", "Francis", "Francisco", "Gil",
+	"Gob", "Gus", "Hank", "Harold", "Harriet", "Henry", "Jacques", "Jorge",
+	"Juan", "Kitty", "Lionel", "Louie", "Lucille", "Lupe", "Mabel", "Maeby",
+	"Marco", "Marta", "Maurice", "Maynard", "Mildred", "Monty", "Mordecai",
+	"Morty", "Pablo", "Seymour", "Stan", "Tobias", "Vivian", "Walter", "Wilbur"]
+LIVE_LEAGUE_GAMES_URL = "https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v0001/"
+MATCH_DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
+KEYS = ["token", "prefix", "owner", "changenick_interval",
+	"api_interval", "apikey", "filter_matches", "notable_leagues",
+	"filter_generic", "no_repeat_matches",
+	"save_match_data", "verbose"]
+BOT_DEFAULTS = {
+	"token": "",
+	"prefix": ";",
+	"owner": "",
+	"changenick_interval": 600,
+	"api_interval": 20,
+	"apikey": "",
+	"filter_matches": True,
+	"notable_leagues": [],
+	"filter_generic": True,
+	"no_repeat_matches": True,
+	"save_match_data": False,
+	"verbose": True
+}
+SERVER_DEFAULTS = {
+	"welcome_channel": "",
+	"matches_channel": "",
+	"welcome_messages": False,
+	"victory_messages": True
+}
+
 class Match:
 	def __init__(self, matchid, radiant_team, dire_team, gameno):
 		self.matchid = matchid
@@ -78,48 +112,15 @@ class MatchList:
 
 		return False
 
-DESC = "Dota2HelperBot, a Discord bot created by Blanedale"
-BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
-	"Bruni", "Buster", "Edith", "Ester", "Flo", "Francis", "Francisco", "Gil",
-	"Gob", "Gus", "Hank", "Harold", "Harriet", "Henry", "Jacques", "Jorge",
-	"Juan", "Kitty", "Lionel", "Louie", "Lucille", "Lupe", "Mabel", "Maeby",
-	"Marco", "Marta", "Maurice", "Maynard", "Mildred", "Monty", "Mordecai",
-	"Morty", "Pablo", "Seymour", "Stan", "Tobias", "Vivian", "Walter", "Wilbur"]
-LIVE_LEAGUE_GAMES_URL = "https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v0001/"
-MATCH_DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
-
-defaults = {
-	"token": "",
-	"prefix": ";",
-	"owner": "",
-	"default_server": "",
-	"join_channel": "",
-	"matches_channel": "",
-	"changenick_interval": 600,
-	"api_interval": 20,
-	"apikey": "",
-	"filter_matches": True,
-	"notable_leagues": [],
-	"filter_generic": True,
-	"victory_messages": True,
-	"no_repeat_matches": True,
-	"save_match_data": False,
-	"verbose": True
-}
-
 settings = {}
 
 with open("data/settings.json") as json_data:
 	file = json.load(json_data)
-	keys = ["token", "prefix", "owner", "default_server", "join_channel",
-		"matches_channel", "changenick_interval", "api_interval", "apikey",
-		"filter_matches", "notable_leagues", "filter_generic",
-		"victory_messages", "no_repeat_matches", "save_match_data", "verbose"]
-	for key in keys:
+	for key in KEYS:
 		if key in file:
 			settings[key] = file[key]
 		else:
-			settings[key] = defaults[key]
+			settings[key] = BOT_DEFAULTS[key]
 
 if not settings["token"]:
 	print("No valid token was found. Please make sure a Discord bot user token is supplied in data/settings.json.")
@@ -132,12 +133,48 @@ if not settings["apikey"]:
 if not settings["prefix"]:
 	settings["prefix"] = ";"
 
+server_settings_list = {}
+
+try:
+	with open("data/server_settings.json") as json_data:
+		file = json.load(json_data)
+		for serv, serv_settings in file.items():
+			server_settings_list[serv] = serv_settings
+except FileNotFoundError:
+	pass
+
 # A blank "owner" field can be handled later, when the bot is up and running
 
 bot = commands.Bot(command_prefix = settings["prefix"], description = DESC)
 
 bot.ongoing_matches = MatchList()
 bot.next_interval = settings["api_interval"]
+
+def is_owner(user):
+	return user.id == settings["owner"]
+
+def is_admin(member):
+	return member.server_permissions.administrator
+
+def save_server_settings():
+	with open("data/server_settings.json", "w") as serv_set:
+		json.dump(server_settings_list, serv_set)
+
+def set_welcome_channel(server, channel):
+	server_settings_list[server.id]["welcome_channel"] = channel.id
+	save_server_settings()
+
+def set_matches_channel(server, channel):
+	server_settings_list[server.id]["matches_channel"] = channel.id
+	save_server_settings()
+
+def set_welcome_messages(server, option):
+	server_settings_list[server.id]["welcome_messages"] = option
+	save_server_settings()
+
+def set_victory_messages(server, option):
+	server_settings_list[server.id]["victory_messages"] = option
+	save_server_settings()
 
 async def set_nick(newnick):
 	for server in bot.servers:
@@ -159,12 +196,29 @@ async def change_nick():
 			await set_nick(choose_nick())
 		await asyncio.sleep(settings["changenick_interval"])
 
-async def say_all_servers(channelid, msg):
+async def say_welcome_channel(server, msg):
+	welcome_channel = server_settings_list[server.id]["welcome_channel"]
+	if welcome_channel:
+		try:
+			await bot.send_message(bot.get_channel(welcome_channel), msg)
+		except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
+			await bot.send_message(server.default_channel, "I wish to post in the designated channel for welcome messages but am unable to, for I lack the required permissions (or else the channel does not exist).")
+			await bot.send_message(server.default_channel, msg)
+	else:
+		await bot.send_message(server.default_channel, msg)
+
+async def say_matches_channel(msg, condition = None):
 	for s in bot.servers:
-		if s.id == settings["default_server"] and channelid:
-			await bot.send_message(bot.get_channel(channelid), msg)
-		else:
-			await bot.send_message(s.default_channel, msg)
+		if not condition or server_settings_list[s.id][condition]:
+			matches_channel = server_settings_list[s.id]["matches_channel"]
+			if matches_channel:
+				try:
+					await bot.send_message(bot.get_channel(matches_channel), msg)
+				except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
+					await bot.send_message(s.default_channel, "I wish to post in the designated channel for match updates but am unable to, for I lack the required permissions (or else the channel does not exist).")
+					await bot.send_message(s.default_channel, msg)
+			else:
+				await bot.send_message(s.default_channel, msg)
 
 async def show_new_match(game, radiant_name, dire_name, gameno):
 	if game["series_type"] == 0:
@@ -176,7 +230,7 @@ async def show_new_match(game, radiant_name, dire_name, gameno):
 	else:
 		series_desc = " (unknown series type %s)" % str(game["series_type"]) # I don't think this is possible
 
-	await say_all_servers(settings["matches_channel"], "The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
+	await say_matches_channel("The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
 
 async def show_match_results(game):
 	if "radiant_name" in game:
@@ -206,7 +260,7 @@ async def show_match_results(game):
 	else:
 		sec_string = " and %s seconds" % s
 
-	await say_all_servers(settings["matches_channel"], "%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"]))
+	await say_matches_channel("%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"]), "victory_messages")
 
 # Get live game data from Valve's web API
 async def get_match_data():
@@ -292,15 +346,27 @@ async def get_match_data():
 
 				print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
 
-			if settings["victory_messages"]:
-				await show_match_results(game)
+			await show_match_results(game)
 			bot.ongoing_matches.remove(finished.matchid)
 
 @bot.event
 async def on_ready():
 	if not settings["owner"]:
 		appinfo = await bot.application_info()
-		owner = appinfo.owner
+		settings["owner"] = appinfo.owner.id
+
+	any_new_servers = False
+	for server in bot.servers:
+		if server.id not in server_settings_list:
+			if settings["verbose"]:
+				print("Generating server-specific settings for %s..." % server.name)
+			server_settings_list[server.id] = dict(SERVER_DEFAULTS)
+			any_new_servers = True
+
+	if any_new_servers:
+		save_server_settings()
+		if settings["verbose"]:
+			print()
 
 	print("Dota2HelperBot, a Discord bot created by Blanedale")
 	print()
@@ -313,11 +379,9 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
-	if member.server.id == settings["default_server"] and settings["join_channel"]:
-		channel = bot.get_channel(settings["join_channel"])
-	else:
-		channel = member.server.default_channel
-	await bot.send_message(channel, "%s has joined the server. Welcome!" % member.mention)
+	serv = member.server
+	if server_settings_list[serv.id]["welcome_messages"]:
+		await say_welcome_channel(serv, "%s has joined the server. Welcome!" % member.mention)
 
 @bot.event
 async def on_server_join(server):
@@ -399,14 +463,117 @@ async def ongoing():
 
 		await bot.say(response)
 
+@bot.command(pass_context = True)
+async def welcomechannel(ctx, argument = None):
+	"""Sets the channel for posting welcome messages.
+
+	When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
+	author = ctx.message.author
+	if is_owner(author) or is_admin(author):
+		server = ctx.message.server
+		if not argument:
+			channel = ctx.message.channel
+			set_welcome_channel(server, channel)
+			await bot.say("%s is now the designated channel for welcome messages." % channel.mention)
+		else:
+			for ch in server.channels:
+				if ch.mention == argument or ch.name == argument or ch.id == argument:
+					if ch.type == discord.ChannelType.text:
+						set_welcome_channel(server, ch)
+						await bot.say("%s is now the designated channel for welcome messages." % ch.mention)
+						return
+					else:
+						await bot.say("That channel cannot be used for such purposes.")
+						return
+			await bot.say("Alas, I know of no such channel.")
+	else:
+		await bot.say("You have not the authority to issue such a command.")
+
+@bot.command(pass_context = True)
+async def matchchannel(ctx, argument = None):
+	"""Sets the channel for posting match updates.
+
+	When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
+	author = ctx.message.author
+	if is_owner(author) or is_admin(author):
+		server = ctx.message.server
+		if not argument:
+			channel = ctx.message.channel
+			set_matches_channel(server, channel)
+			await bot.say("%s is now the designated channel for match updates." % channel.mention)
+		else:
+			for ch in server.channels:
+				if ch.mention == argument or ch.name == argument or ch.id == argument:
+					if ch.type == discord.ChannelType.text:
+						set_matches_channel(server, ch)
+						await bot.say("%s is now the designated channel for match updates." % ch.mention)
+						return
+					else:
+						await bot.say("That channel cannot be used for such purposes.")
+						return
+			await bot.say("Alas, I know of no such channel.")
+	else:
+		await bot.say("You have not the authority to issue such a command.")
+
+@bot.command(pass_context = True)
+async def greetnewmembers(ctx, argument = None):
+	"""Turns the welcome messages on or off.
+
+	When used without an argument, shows current setting. Use "off", "no", or "false" to turn welcome messages off. Anything else turns it on."""
+	server = ctx.message.server
+	if not argument:
+		if server_settings_list[server.id]["welcome_messages"]:
+			await bot.say("Welcome messages are currently enabled.")
+		else:
+			await bot.say("Welcome messages are currently disabled.")
+	else:
+		author = ctx.message.author
+		if is_owner(author) or is_admin(author):
+			if argument == "off" or argument == "no" or argument == "false":
+				set_welcome_messages(server, False)
+				await bot.say("Welcome messages are now disabled.")
+			else:
+				set_welcome_messages(server, True)
+				await bot.say("Welcome messages are now enabled.")
+		else:
+			await bot.say("You have not the authority to issue such a command.")
+
+@bot.command(pass_context = True)
+async def victorymessages(ctx, argument = None):
+	"""Turns the victory messages on or off.
+
+	When used without an argument, shows current setting. Use "off", "no", or "false" to turn victory messages off. Anything else turns it on."""
+	server = ctx.message.server
+	if not argument:
+		if server_settings_list[server.id]["victory_messages"]:
+			await bot.say("Victory messages are currently enabled.")
+		else:
+			await bot.say("Victory messages are currently disabled.")
+	else:
+		author = ctx.message.author
+		if is_owner(author) or is_admin(author):
+			if argument == "off" or argument == "no" or argument == "false":
+				set_victory_messages(server, False)
+				await bot.say("Victory messages are now disabled.")
+			else:
+				set_victory_messages(server, True)
+				await bot.say("Victory messages are now enabled.")
+		else:
+			await bot.say("You have not the authority to issue such a command.")
+
 @bot.event
 async def on_command_error(error, ctx):
 	channel = ctx.message.channel
-	if isinstance(error, commands.CommandNotFound):
-		await bot.send_message(channel, "I fear I know not of this '%s'. Is it perchance a new Hero?" % ctx.message.content[len(settings["prefix"]):])
+	if isinstance(error, commands.MissingRequiredArgument):
+		await bot.send_message(channel, "Truly, your wish is my command, but I cannot carry out your orders without a suitable argument.")
+	elif isinstance(error, commands.BadArgument):
+		await bot.send_message(channel, "Truly, your wish is my command, but I cannot make head nor tail of the argument you do provide.")
+	elif isinstance(error, commands.CommandNotFound):
+		await bot.send_message(channel, "I fear I know not of this \"%s\". Is it perchance a new Hero?" % ctx.message.content[len(settings["prefix"]):])
 	else:
 		owner = await bot.get_user_info(settings["owner"])
 		await bot.send_message(channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve. Methinks you would do well to consult %s on this matter." % owner.mention)
+		print(str(type(error)) + str(error))
 
 bot.loop.create_task(get_match_data())
 bot.loop.create_task(change_nick())

@@ -23,16 +23,12 @@ The complete list of options is as follows:
 	"token": String that will be the bot's token
 	"prefix": String representing the command prefix
 	"owner": String representing your Discord user ID
-	"default_server": String, ID of the server to use for channel-specific messages. Leave blank for the bot to always post updates in the default channel
-	"join_channel": String, ID of the channel you want the bot to post welcome messages in
-	"matches_channel": String, ID of the channel you want the bot to post match notifications in
 	"changenick_interval": Int, number of seconds to wait before changing nickname again
 	"api_interval": Int, number of seconds to wait before making another call to Valve's API (recommended to be greater than 1)
 	"apikey": String representing your Steam API key
 	"filter_matches": Bool, determines whether the bot only reports on important matches (i.e. matches in notable leagues)
 	"notable_leagues": Array of ints representing the IDs of leagues you want to track
 	"filter_generic": Bool, determines whether the bot filters out matches where neither team has a real name
-	"victory_messages": Bool, controls the victory messages setting (see below)
 	"no_repeat_matches": Bool, controls the norepeatmatches setting (see below)
 	"save_match_data": Bool, controls logging of data obtained from API calls
 	"verbose": Bool, enables a bit more information in the program output
@@ -51,11 +47,19 @@ Of these fields, only `token` and `apikey` are required (though adding `notable_
 
 `ongoing` - Shows matches that are currently being “tracked” by the bot.
 
+`welcomechannel` - Sets the channel for posting welcome messages. When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID.
+
+`matchchannel` - Sets the channel for posting match updates. When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID.
+
+`greetnewmembers` - Turns the welcome messages on or off. When used without an argument, shows current setting. Use "off", "no", or "false" to turn welcome messages off. Anything else turns it on.
+
+`victorymessages` - Turns the victory messages on or off. When used without an argument, shows current setting. Use "off", "no", or "false" to turn victory messages off. Anything else turns it on.
+
+Any action that changes a server-specific setting must be performed by a server admin or the bot owner.
+
 ## Unimplemented commands
 
-`norepeatmatches on|off` - When this setting is enabled, the bot will not report on new matches whose participants match the participants of an ongoing match. Useful for handling duplicate “ghost” matches that occasionally appear in Valve’s match data.
-
-`victorymessages on|off` - When this setting is enabled, the bot will report the winner of a match once it ends, along with some details and a Dotabuff link.
+`contact` - Sends a message to the bot owner.
 
 `untrack` - Removes all matches from the tracking list.
 
@@ -65,9 +69,7 @@ Of these fields, only `token` and `apikey` are required (though adding `notable_
 
 `score` - Shows the given user’s prediction record.
 
-## How to find the ID of something in Discord:
+## Todo:
 
-1. In User Settings > Appearance, under "Advanced", enable the Developer Mode option.
-2. Right-click on the channel or server you want to get the ID of and select Copy ID.
-3. Paste the ID wherever you want. Feel free to disable the Developer Mode option if you don't need it anymore.
-
+* Better error messages when a command is used incorrectly
+* Ensure that the bot behaves as expected when invalid token or Steam API key values are used
