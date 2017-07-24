@@ -69,7 +69,17 @@ Any action that changes a server-specific setting must be performed by a server 
 
 `score` - Shows the given user’s prediction record.
 
-## Todo:
+`restart` - Restarts the bot. Can only be used by the bot owner.
+
+`addleague` - Adds to the list of notable leagues. Can only be used by the bot owner.
+
+`leagues` - Shows the list of notable leagues.
+
+## Tips
+
+I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`, or on Windows, try `set PYTHONIOENCODING="utf-8"`.
+
+## Todo
 
 * Better error messages when a command is used incorrectly
 * Ensure that the bot behaves as expected when invalid token or Steam API key values are used
