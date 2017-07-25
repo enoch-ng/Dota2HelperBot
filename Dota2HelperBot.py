@@ -161,6 +161,9 @@ def is_owner(user):
 def is_admin(member):
 	return member.server_permissions.administrator
 
+def get_owner():
+	return await bot.get_user_info(settings["owner"])
+
 def save_server_settings():
 	with open("data/server_settings.json", "w") as serv_set:
 		json.dump(server_settings_list, serv_set)
@@ -384,6 +387,12 @@ async def on_ready():
 	if not settings["owner"]:
 		appinfo = await bot.application_info()
 		settings["owner"] = appinfo.owner.id
+
+	try:
+		get_owner()
+	except discord.NotFound:
+		print("The bot owner could not be determined. Please check your settings.json file.")
+		print()
 
 	any_new_servers = False
 	for server in bot.servers:
@@ -626,8 +635,10 @@ async def on_command_error(error, ctx):
 	elif isinstance(error, commands.CommandNotFound):
 		await bot.send_message(channel, "I fear I know not of this \"%s\". Is it perchance a new Hero?" % ctx.message.content[len(settings["prefix"]):])
 	else:
-		owner = await bot.get_user_info(settings["owner"])
-		await bot.send_message(channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve. Methinks you would do well to consult %s on this matter." % owner.mention)
+		try:
+			await bot.send_message(channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve. Methinks you would do well to consult %s on this matter." % get_owner().mention)
+		except discord.NotFound:
+			await bot.send_message(channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve.")
 		print(str(type(error)) + str(error))
 
 bot.loop.create_task(get_match_data())
