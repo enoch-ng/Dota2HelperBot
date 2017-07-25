@@ -33,13 +33,13 @@ The complete list of options is as follows:
 	"filter_matches": Bool, determines whether the bot only reports on important matches (i.e. matches in notable leagues)
 	"notable_leagues": Array of ints representing the IDs of leagues you want to track
 	"filter_generic": Bool, determines whether the bot filters out matches where neither team has a real name
-	"no_repeat_matches": Bool, controls the norepeatmatches setting (see below)
+	"no_repeat_matches": Bool, controls whether the bot filters out matches with the same teams and series score as a previous one
 	"save_match_data": Bool, controls logging of data obtained from API calls
 	"verbose": Bool, enables a bit more information in the program output
 }
 ```
 
-Of these fields, only `token` and `apikey` are required. `prefix` defaults to semicolon if left blank or not provided.
+Of these fields, only `token` and `apikey` are required. `prefix` defaults to semicolon if left blank or not provided. The bot will attempt to determine its owner automatically if `owner` is not provided.
 
 ## Implemented commands
 
@@ -77,7 +77,6 @@ Any action that changes a server-specific setting must be performed by a server 
 
 `leagues` - Shows the list of notable leagues.
 
-
 ## Tips
 
 I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`. On Windows, try `set PYTHONIOENCODING="utf-8"`.
@@ -88,3 +87,5 @@ I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in o
 * Better error messages when a command is used incorrectly
 * Ensure that the bot behaves as expected when invalid token or Steam API key values are used
 * Implement a better way to change server-specific setting features without having to discard existing server-specific settings
+* Twitch streams
+* Fetch and save kill score and net worth difference periodically
