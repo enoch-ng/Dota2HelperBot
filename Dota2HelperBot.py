@@ -218,20 +218,7 @@ async def say_welcome_channel(server, msg):
 
 async def say_match_start(msg):
 	for s in bot.servers:
-		matches_channel = server_settings_list[s.id]["matches_channel"]
-		if matches_channel:
-			try:
-				await bot.send_message(bot.get_channel(matches_channel), msg)
-			except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
-				await bot.send_message(s.default_channel, "I wish to post in the designated channel for match updates but am unable to, for I lack the required permissions (or else the channel does not exist).")
-				await bot.send_message(s.default_channel, msg)
-		else:
-			await bot.send_message(s.default_channel, msg)
-
-async def say_victory_message(msg_winner, msg_no_winner):
-	for s in bot.servers:
-		if server_settings_list[s.id]["victory_messages"]:
-			msg = msg_no_winner if server_settings_list[s.id]["hide_winner"] else msg_winner
+		try: # Catching potential HTTPExceptions here is actually important, because if we don't then the background task will stop
 			matches_channel = server_settings_list[s.id]["matches_channel"]
 			if matches_channel:
 				try:
@@ -241,6 +228,25 @@ async def say_victory_message(msg_winner, msg_no_winner):
 					await bot.send_message(s.default_channel, msg)
 			else:
 				await bot.send_message(s.default_channel, msg)
+		except discord.HTTPException:
+			pass
+
+async def say_victory_message(msg_winner, msg_no_winner):
+	for s in bot.servers:
+		if server_settings_list[s.id]["victory_messages"]:
+			try:
+				msg = msg_no_winner if server_settings_list[s.id]["hide_winner"] else msg_winner
+				matches_channel = server_settings_list[s.id]["matches_channel"]
+				if matches_channel:
+					try:
+						await bot.send_message(bot.get_channel(matches_channel), msg)
+					except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
+						await bot.send_message(s.default_channel, "I wish to post in the designated channel for match updates but am unable to, for I lack the required permissions (or else the channel does not exist).")
+						await bot.send_message(s.default_channel, msg)
+				else:
+					await bot.send_message(s.default_channel, msg)
+			except discord.HTTPException:
+				pass
 
 async def show_new_match(game, radiant_name, dire_name, gameno):
 	if game["series_type"] == 0:
