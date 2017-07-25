@@ -43,10 +43,6 @@ Of these fields, only `token` and `apikey` are required. `prefix` defaults to se
 
 ## Implemented commands
 
-`purge` - Purges a user’s messages from the server. Actually, it only searches the last 1000 messages of each channel, so if the user has been in the server for a long time you may need to run the command multiple times if you want to be thorough.
-
-`purgefromchannel` - Purges a user’s messages from the channel the command was issued in. Actually, it only searches the last 1000 messages in the channel, so if the user has been in the server for a long time you may need to run the command multiple times if you want to be thorough.
-
 `changename` - Causes the bot to choose a random new nickname.
 
 `ongoing` - Shows matches that are currently being “tracked” by the bot.

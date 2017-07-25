@@ -436,64 +436,6 @@ async def on_member_join(member):
 async def on_server_join(server):
 	await set_nick(choose_nick())
 
-def is_allowed_by_hierarchy(server, mod, user):
-	is_special = mod == server.owner or mod.id == settings["owner"]
-	return mod.top_role.position > user.top_role.position or is_special
-
-@bot.command(pass_context = True)
-async def purge(ctx, user: discord.Member):
-	"""Purges a user's messages from the server.
-
-	It doesn't search from the beginning of message history, so you may need to run it multiple times if you want to be thorough."""
-	server = ctx.message.server
-	author = ctx.message.author
-
-	if not is_allowed_by_hierarchy(server, author, user):
-		await bot.say("Oh? But you have not the authority to issue such a command. I require instruction from a higher power in order to purge %s's messages." % user.mention)
-		return
-
-	try:
-		any_to_delete = False
-		for channel in server.channels:
-			async for message in bot.logs_from(channel, limit = 1000, before = ctx.message):
-				if message.author == user:
-					await bot.delete_message(message)
-					any_to_delete = True
-
-		if any_to_delete:
-			await bot.say("Done. Let their name be forgotten like the dust which blows in the wind.")
-		else:
-			await bot.say("They bear no record here. How can we erase that which never existed?")
-	except discord.Forbidden:
-		await bot.say("I fear the limitations bestowed upon me are too great for such a task.")
-
-@bot.command(pass_context = True)
-async def purgefromchannel(ctx, user: discord.Member):
-	"""Purges a user's messages from the channel.
-
-	It doesn't search from the beginning of message history, so you may need to run it multiple times if you want to be thorough."""
-	server = ctx.message.server
-	author = ctx.message.author
-
-	if not is_allowed_by_hierarchy(server, author, user):
-		await bot.say("Oh? But you have not the authority to issue such a command. I require instruction from a higher power in order to purge %s's messages." % user.mention)
-		return
-
-	try:
-		channel = ctx.message.channel
-		any_to_delete = False
-		async for message in bot.logs_from(channel, limit = 1000, before = ctx.message):
-			if message.author == user:
-				await bot.delete_message(message)
-				any_to_delete = True
-
-		if any_to_delete:
-			await bot.say("Done. Let their name be forgotten like the dust which blows in the wind.")
-		else:
-			await bot.say("They bear no record here. How can we erase that which never existed?")
-	except discord.Forbidden:
-		await bot.say("I fear the limitations bestowed upon me are too great for such a task.")
-
 @bot.command()
 async def changename():
 	"""Chooses a random new nickname for the bot."""
