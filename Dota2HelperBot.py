@@ -340,7 +340,10 @@ async def get_match_data():
 					gameno = game["radiant_series_wins"] + game["dire_series_wins"] + 1
 
 					if settings["verbose"]:
-						print("[%s] Adding match %s to list (%s vs. %s, Game %s)" % (current_time, game["match_id"], radiant_name, dire_name, gameno))
+						try:
+							print("[%s] Adding match %s to list (%s vs. %s, Game %s)" % (current_time, game["match_id"], radiant_name, dire_name, gameno))
+						except UnicodeEncodeError:
+							print("A new match has been added to the list, but could not be displayed here due to an encoding error")
 					
 					if not (settings["no_repeat_matches"] and bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name, gameno)):
 						await show_new_match(game, radiant_name, dire_name, gameno)
@@ -379,7 +382,10 @@ async def get_match_data():
 				else:
 					dire_name = "Dire"
 
-				print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
+				try:
+					print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
+				except UnicodeEncodeError:
+					print("A match has finished, but could not be displayed here due to an encoding error")
 
 			await show_match_results(game)
 			bot.ongoing_matches.remove(finished.matchid)
