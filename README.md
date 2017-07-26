@@ -25,25 +25,27 @@ The complete list of options is as follows:
 ```
 {
 	"token": String that will be the bot's token
-	"prefix": String representing the command prefix
+	"prefix": String representing the command prefix, defaults to ;
 	"owner": String representing your Discord user ID
-	"changenick_interval": Int, number of seconds to wait before changing nickname again
-	"api_interval": Int, number of seconds to wait before making another call to Valve's API (recommended to be greater than 1)
+	"changenick_interval": Int, number of seconds to wait before changing nickname again, default: 600
+	"api_interval": Int, number of seconds to wait before making another call to Valve's API (recommended to be greater than 1), default: 20
 	"apikey": String representing your Steam API key
-	"filter_matches": Bool, determines whether the bot only reports on important matches (i.e. matches in notable leagues)
-	"notable_leagues": Array of ints representing the IDs of leagues you want to track
-	"filter_generic": Bool, determines whether the bot filters out matches where neither team has a real name
-	"no_repeat_matches": Bool, controls whether the bot filters out matches with the same teams and series score as a previous one
-	"save_match_data": Bool, controls logging of data obtained from API calls
-	"verbose": Bool, enables a bit more information in the program output
+	"filter_matches": Bool, determines whether the bot only reports on important matches (i.e. matches in notable leagues), default: true
+	"notable_leagues": Array of ints representing the IDs of leagues you want to track.
+	"filter_generic": Bool, determines whether the bot filters out matches where neither team has a real name, default: true
+	"no_repeat_matches": Bool, controls whether the bot filters out matches with the same teams and series score as a previous one, default: true
+	"save_match_data": Bool, controls logging of data obtained from API calls, default: false
+	"verbose": Bool, enables a bit more information in the program output, default: true
 }
 ```
 
-Of these fields, only `token` and `apikey` are required. `prefix` defaults to semicolon if left blank or not provided. The bot will attempt to determine its owner automatically if `owner` is not provided.
+Of these fields, only `token` and `apikey` are required. The bot will attempt to determine its owner automatically if `owner` is not provided.
 
 ## Implemented commands
 
 `changename` - Causes the bot to choose a random new nickname.
+
+`join` - Displays a link where server owners can add this bot.
 
 `ongoing` - Shows matches that are currently being “tracked” by the bot.
 
@@ -55,7 +57,7 @@ Of these fields, only `token` and `apikey` are required. `prefix` defaults to se
 
 `victorymessages` - Turns the victory messages on or off. When used without an argument, shows current setting. Use "off", "no", or "false" to turn victory messages off. Anything else turns it on.
 
-`hidewinner` - Controls whether the bot omits the winner, duration, and final score from the victory message. When used without an argument, shows current setting. Use "off", "no", or "false" to turn welcome messages off. Anything else turns it on.
+`showresult` - Controls whether the bot displays the winner, duration, and final score in the victory message. When used without an argument, shows current setting. Use "off", "no", or "false" to turn this option off. Anything else turns it on.
 
 Any action that changes a server-specific setting must be performed by a server admin or the bot owner.
 
