@@ -31,7 +31,7 @@ The complete list of options is as follows:
 	"api_interval": Int, number of seconds to wait before making another call to Valve's API (recommended to be greater than 1), default: 20
 	"apikey": String representing your Steam API key
 	"filter_matches": Bool, determines whether the bot only reports on important matches (i.e. matches in notable leagues), default: true
-	"notable_leagues": Array of ints representing the IDs of leagues you want to track.
+	"notable_leagues": Array of ints representing the IDs of leagues you want to track. default: [5401] (see Tips)
 	"filter_generic": Bool, determines whether the bot filters out matches where neither team has a real name, default: true
 	"no_repeat_matches": Bool, controls whether the bot filters out matches with the same teams and series score as a previous one, default: true
 	"save_match_data": Bool, controls logging of data obtained from API calls, default: false
@@ -83,6 +83,7 @@ Any action that changes a server-specific setting must be performed by a server 
 
 * I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`. On Windows, try `set PYTHONIOENCODING="utf-8"`.
 * Valve's API occasionally sends multiple matches with the same data but different match IDs. Although the bot should filter out the duplicates (with no_repeat_matches enabled), it will still track all of them, since it has no way of knowing which is the "real" one. After a while, there might be a slowly growing pile of duplicate matches that will never finish. Therefore, it's a good idea to run `ongoing` (to make sure no real matches are going on) and `untrack` from time to time to clean them up. In the future the program will be able to clean up these duplicates automatically.
+* You can get league IDs by calling the GetLeagueListing API method: https://api.steampowered.com/IDOTA2Match_570/GetLeagueListing/v1/?key=<APIKEY> For convenience, I've added TI7 (ID 5401) to the defaults.
 
 ## Todo
 

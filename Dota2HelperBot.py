@@ -19,7 +19,7 @@ BOT_DEFAULTS = {
 	"api_interval": 20,
 	"apikey": "",
 	"filter_matches": True,
-	"notable_leagues": [],
+	"notable_leagues": [5401],
 	"filter_generic": True,
 	"no_repeat_matches": True,
 	"save_match_data": False,
