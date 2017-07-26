@@ -130,6 +130,33 @@ class General:
 		"""Displays a link where server owners can add this bot."""
 		await self.bot.say("Another server? I am but a simple servant. %s" % self.bot.joinurl)
 
+	@commands.command(pass_context = True)
+	@commands.cooldown(1, 60, commands.BucketType.user)
+	async def contact(self, ctx, *, message):
+		"""Sends a message to the bot owner (60s cooldown).
+
+		Is not affected by Octarine Core, Refresher Orb, Rearm, or cooldown reduction talents."""
+		try:
+			owner = await self.bot.get_owner()
+		except discord.NotFound:
+			await self.bot.say("Alas, I know not who my owner is.")
+			return
+
+		author = ctx.message.author
+		emb = discord.Embed(description = message)
+		emb.set_author(name = "Message from %s" % author)
+
+		try:
+			await self.bot.send_message(owner, embed = emb)
+		except discord.InvalidArgument:
+			await self.bot.say("Alas, I know not where my owner is.")
+		except discord.HTTPException:
+			await self.bot.say("Alas, I could not deliver your message. Perhaps it is too long?")
+		except:
+			await self.bot.say("Alas, for reasons yet unknown to me, I could not deliver your message.")
+		else:
+			await self.bot.say("I have delivered your message with utmost haste! I pray it should arrive safely.")
+
 def setup(bot):
 	general = General(bot)
 	bot.add_cog(general)

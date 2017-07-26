@@ -49,6 +49,8 @@ Of these fields, only `token` and `apikey` are required. The bot will attempt to
 
 `ongoing` - Shows matches that are currently being “tracked” by the bot.
 
+`leagues` - Shows the list of notable leagues.
+
 `welcomechannel` - Sets the channel for posting welcome messages. When used without an argument, shows current setting. Otherwise, accepts a channel mention, a channel name, or a channel ID.
 
 `matchchannel` - Sets the channel for posting match updates. When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID.
@@ -59,11 +61,11 @@ Of these fields, only `token` and `apikey` are required. The bot will attempt to
 
 `showresult` - Controls whether the bot displays the winner, duration, and final score in the victory message. When used without an argument, shows current setting. Use "off", "no", or "false" to turn this option off. Anything else turns it on.
 
+`contact` - Sends a message to the bot owner. Has a cooldown of 60 seconds.
+
 Any action that changes a server-specific setting must be performed by a server admin or the bot owner.
 
 ## Unimplemented commands
-
-`contact` - Sends a message to the bot owner.
 
 `untrack` - Removes all matches from the tracking list. Can only be used by the bot owner.
 
@@ -77,13 +79,11 @@ Any action that changes a server-specific setting must be performed by a server 
 
 `addleague` - Adds to the list of notable leagues. Can only be used by the bot owner.
 
-`leagues` - Shows the list of notable leagues.
-
 ## Tips
 
 * I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`. On Windows, try `set PYTHONIOENCODING="utf-8"`.
 * Valve's API occasionally sends multiple matches with the same data but different match IDs. Although the bot should filter out the duplicates (with no_repeat_matches enabled), it will still track all of them, since it has no way of knowing which is the "real" one. After a while, there might be a slowly growing pile of duplicate matches that will never finish. Therefore, it's a good idea to run `ongoing` (to make sure no real matches are going on) and `untrack` from time to time to clean them up. In the future the program will be able to clean up these duplicates automatically.
-* You can get league IDs by calling the GetLeagueListing API method: https://api.steampowered.com/IDOTA2Match_570/GetLeagueListing/v1/?key=<APIKEY> For convenience, I've added TI7 (ID 5401) to the defaults.
+* You can get league IDs by calling the GetLeagueListing API method: https://api.steampowered.com/IDOTA2Match_570/GetLeagueListing/v1/?key= For convenience, I've added TI7 (ID 5401) to the defaults.
 
 ## Todo
 

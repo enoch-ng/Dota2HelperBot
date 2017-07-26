@@ -32,7 +32,7 @@ SERVER_DEFAULTS = {
 	"victory_messages": True,
 	"show_result": True
 }
-CDMESSAGES = ["It is not time yet.", "'Tis not yet time.",
+CDMESSAGES = ["It is not time yet.", "'Tis not yet time.", "Not yet.",
 	"I need more time.", "I am not ready.", "It is not yet time."]
 
 settings = {}
@@ -146,7 +146,7 @@ async def on_command_error(error, ctx):
 	elif isinstance(error, commands.CommandNotFound):
 		await bot.send_message(channel, "I fear I know not of this \"%s\". Is it perchance a new Hero?" % ctx.message.content[len(bot.settings["prefix"]):])
 	elif isinstance(error, commands.CommandOnCooldown):
-		await bot.send_message(channel, random.choice(CDMESSAGES))
+		await bot.send_message(channel, random.choice(CDMESSAGES) + " (%ss remaining)" % int(error.retry_after))
 	elif isinstance(error, commands.NoPrivateMessage):
 		await bot.send_message(channel, "Truly, your wish is my command, but that order is not to be issued in secret. It must be invoked in a server.")
 	else:
@@ -160,5 +160,5 @@ async def on_command_error(error, ctx):
 			print(repr(error))
 
 bot.load_extension("cogs.general")
-bot.load_extension("cogs.matchupdates")
+bot.load_extension("cogs.dota")
 bot.run(bot.settings["token"])

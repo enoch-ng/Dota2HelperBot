@@ -92,6 +92,9 @@ class Dota:
 	def show_result(self, server):
 		return self.bot.server_settings_list[server.id]["show_result"]
 
+	def notable_leagues(self):
+		return self.bot.settings["notable_leagues"]
+
 	def set_matches_channel(self, server, channel):
 		self.bot.server_settings_list[server.id]["matches_channel"] = channel.id
 		self.bot.save_server_settings()
@@ -274,14 +277,23 @@ class Dota:
 	@commands.command()
 	async def ongoing(self):
 		"""Shows matches that are currently being tracked by the bot."""
-		if len(self.bot.ongoing_matches) == 0:
-			await self.bot.say("There are as yet no ongoing games.")
-		else:
-			response = "Ongoing games: "
+		if len(self.bot.ongoing_matches) > 0:
+			response = "Ongoing games:"
 			for match in self.bot.ongoing_matches:
 				response += "\n%s vs. %s (Match %s)" % (match.radiant_team, match.dire_team, match.matchid)
-
 			await self.bot.say(response)
+		else:
+			await self.bot.say("There are as yet no ongoing games.")
+
+	@commands.command()
+	async def leagues(self):
+		"""Displays leagues being tracked by the bot."""
+		leagues = self.notable_leagues()
+		if len(leagues) > 0:
+			response = "Tracked leagues: " + ", ".join([str(item) for item in leagues])
+			await self.bot.say(response)
+		else:
+			await self.bot.say("There are as yet no leagues being tracked.")
 
 	@commands.command(pass_context = True, no_pm = True)
 	async def matchchannel(self, ctx, argument = None):
