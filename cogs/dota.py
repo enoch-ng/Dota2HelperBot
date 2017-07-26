@@ -10,6 +10,7 @@ except ImportError:
 
 LIVE_LEAGUE_GAMES_URL = "https://api.steampowered.com/IDOTA2Match_570/GetLiveLeagueGames/v0001/"
 MATCH_DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
+MATCH_CHANNEL_NOT_FOUND = "I wish to post in the designated channel for match updates but am unable to, for I lack the required permissions (or else the channel does not exist)."
 
 class Match:
 	def __init__(self, matchid, radiant_team, dire_team, gameno):
@@ -83,30 +84,6 @@ class Dota:
 	def __init__(self, bot):
 		self.bot = bot
 
-	def matches_channel(self, server):
-		return self.bot.server_settings_list[server.id]["matches_channel"]
-
-	def victory_messages(self, server):
-		return self.bot.server_settings_list[server.id]["victory_messages"]
-
-	def show_result(self, server):
-		return self.bot.server_settings_list[server.id]["show_result"]
-
-	def notable_leagues(self):
-		return self.bot.settings["notable_leagues"]
-
-	def set_matches_channel(self, server, channel):
-		self.bot.server_settings_list[server.id]["matches_channel"] = channel.id
-		self.bot.save_server_settings()
-
-	def set_victory_messages(self, server, option):
-		self.bot.server_settings_list[server.id]["victory_messages"] = option
-		self.bot.save_server_settings()
-
-	def set_show_result(self, server, option):
-		self.bot.server_settings_list[server.id]["show_result"] = option
-		self.bot.save_server_settings()
-
 	async def say_match_start(self, msg):
 		for s in self.bot.servers:
 			try: # Catching potential HTTPExceptions here is actually important, because if we don't then the background task will stop
@@ -115,7 +92,7 @@ class Dota:
 					try:
 						await self.bot.send_message(self.bot.get_channel(matches_channel), msg)
 					except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
-						await self.bot.send_message(s.default_channel, msg)
+						await self.bot.send_message(s.default_channel, MATCH_CHANNEL_NOT_FOUND)
 				else:
 					await self.bot.send_message(s.default_channel, msg)
 			except discord.HTTPException:
@@ -131,7 +108,7 @@ class Dota:
 						try:
 							await self.bot.send_message(self.bot.get_channel(matches_channel), msg)
 						except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
-							await self.bot.send_message(s.default_channel, msg)
+							await self.bot.send_message(s.default_channel, MATCH_CHANNEL_NOT_FOUND)
 					else:
 						await self.bot.send_message(s.default_channel, msg)
 				except discord.HTTPException:
@@ -288,7 +265,7 @@ class Dota:
 	@commands.command()
 	async def leagues(self):
 		"""Displays leagues being tracked by the bot."""
-		leagues = self.notable_leagues()
+		leagues = self.bot.get_notable_leagues()
 		if len(leagues) > 0:
 			response = "Tracked leagues: " + ", ".join([str(item) for item in leagues])
 			await self.bot.say(response)
@@ -302,7 +279,7 @@ class Dota:
 		When used without an argument, shows current setting. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
 		server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
 		if not argument:
-			chsetting = self.bot.get_channel(self.matches_channel(server))
+			chsetting = self.bot.get_channel(self.bot.get_matches_channel(server))
 			channel = server.default_channel if chsetting is None else chsetting
 			await self.bot.say("%s is currently the designated channel for match updates." % channel.mention)
 		else:
@@ -311,7 +288,7 @@ class Dota:
 				for ch in server.channels:
 					if ch.mention == argument or ch.name == argument or ch.id == argument:
 						if ch.type == discord.ChannelType.text:
-							self.set_matches_channel(server, ch)
+							self.bot.set_matches_channel(server, ch)
 							await self.bot.say("%s is now the designated channel for match updates." % ch.mention)
 							return
 						else:
@@ -329,16 +306,16 @@ class Dota:
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn victory messages off. Anything else turns it on."""
 		server = ctx.message.server
 		if not argument:
-			vmstate = "enabled" if self.victory_messages(server) else "disabled"
+			vmstate = "enabled" if self.bot.get_victory_messages(server) else "disabled"
 			await self.bot.say("Post-game messages are currently %s." % vmstate)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):
 				if argument == "off" or argument == "no" or argument == "false":
-					self.set_victory_messages(server, False)
+					self.bot.set_victory_messages(server, False)
 					await self.bot.say("Post-game messages are now disabled.")
 				else:
-					self.set_victory_messages(server, True)
+					self.bot.set_victory_messages(server, True)
 					await self.bot.say("Post-game messages are now enabled.")
 			else:
 				await self.bot.say("You have not the authority to issue such a command.")
@@ -350,16 +327,16 @@ class Dota:
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn this feature off. Anything else turns it on."""
 		server = ctx.message.server
 		if not argument:
-			srstate = "enabled" if self.show_result(server) else "disabled"
+			srstate = "enabled" if self.bot.get_show_result(server) else "disabled"
 			await self.bot.say("Match results in post-game messages are currently %s." % srstate)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):
 				if argument == "off" or argument == "no" or argument == "false":
-					self.set_show_result(server, False)
+					self.bot.set_show_result(server, False)
 					await self.bot.say("Match results in post-game messages are now disabled.")
 				else:
-					self.set_show_result(server, True)
+					self.bot.set_show_result(server, True)
 					await self.bot.say("Match results in post-game messages are now enabled.")
 			else:
 				await self.bot.say("You have not the authority to issue such a command.")

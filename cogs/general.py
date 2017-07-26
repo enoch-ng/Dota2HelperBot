@@ -13,6 +13,7 @@ BOTNAMES = ["Agnes", "Alfred", "Archy", "Barty", "Benjamin", "Bertram",
 	"Juan", "Kitty", "Lionel", "Louie", "Lucille", "Lupe", "Mabel", "Maeby",
 	"Marco", "Marta", "Maurice", "Maynard", "Mildred", "Monty", "Mordecai",
 	"Morty", "Pablo", "Seymour", "Stan", "Tobias", "Vivian", "Walter", "Wilbur"]
+WELCOME_CHANNEL_NOT_FOUND = "I wish to post in the designated channel for welcome messages but am unable to, for I lack the required permissions (or else the channel does not exist)."
 
 class General:
 	"""General features, including automatic name changing and welcome messages"""
@@ -63,7 +64,7 @@ class General:
 			try:
 				await self.bot.send_message(self.bot.get_channel(welcome_channel), msg)
 			except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
-				await self.bot.send_message(server.default_channel, msg)
+				await self.bot.send_message(server.default_channel, WELCOME_CHANNEL_NOT_FOUND)
 		else:
 			await self.bot.send_message(server.default_channel, msg)
 

@@ -72,17 +72,41 @@ class Bot(commands.Bot):
 		# Maybe put the above code in this block, so the bot.settings = settings line is not needed? But I would need a way to change the prefix T.T
 
 	def is_owner(self, user):
-		return user.id == bot.settings["owner"]
+		return user.id == self.settings["owner"]
 
 	def is_admin(self, member):
 		return member.server_permissions.administrator
 
 	async def get_owner(self):
-		return await bot.get_user_info(bot.settings["owner"])
+		return await self.get_user_info(self.settings["owner"])
+
+	def get_matches_channel(self, server):
+		return self.server_settings_list[server.id]["matches_channel"]
+
+	def get_victory_messages(self, server):
+		return self.server_settings_list[server.id]["victory_messages"]
+
+	def get_show_result(self, server):
+		return self.server_settings_list[server.id]["show_result"]
+
+	def get_notable_leagues(self):
+		return self.settings["notable_leagues"]
 	
 	def save_server_settings(self):
 		with open("data/server_settings.json", "w") as serv_set:
-			json.dump(bot.server_settings_list, serv_set, indent = 4)
+			json.dump(self.server_settings_list, serv_set, indent = 4)
+
+	def set_matches_channel(self, server, channel):
+		self.server_settings_list[server.id]["matches_channel"] = channel.id
+		self.save_server_settings()
+
+	def set_victory_messages(self, server, option):
+		self.server_settings_list[server.id]["victory_messages"] = option
+		self.save_server_settings()
+
+	def set_show_result(self, server, option):
+		self.server_settings_list[server.id]["show_result"] = option
+		self.save_server_settings()
 
 bot = Bot(command_prefix = settings["prefix"], description = DESC)
 bot.settings = settings
@@ -144,7 +168,8 @@ async def on_command_error(error, ctx):
 	elif isinstance(error, commands.BadArgument):
 		await bot.send_message(channel, "Truly, your wish is my command, but I cannot make head nor tail of the argument you do provide.")
 	elif isinstance(error, commands.CommandNotFound):
-		await bot.send_message(channel, "I fear I know not of this \"%s\". Is it perchance a new Hero?" % ctx.message.content[len(bot.settings["prefix"]):])
+		# This is almost as ugly as Manta on Medusa
+		await bot.send_message(channel, "I fear I know not of this \"%s\". Is it perchance a new Hero?" % ctx.message.content[len(bot.settings["prefix"]):].partition(' ')[0])
 	elif isinstance(error, commands.CommandOnCooldown):
 		await bot.send_message(channel, random.choice(CDMESSAGES) + " (%ss remaining)" % int(error.retry_after))
 	elif isinstance(error, commands.NoPrivateMessage):
