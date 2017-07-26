@@ -81,7 +81,8 @@ Any action that changes a server-specific setting must be performed by a server 
 
 ## Tips
 
-I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`. On Windows, try `set PYTHONIOENCODING="utf-8"`.
+* I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`. On Windows, try `set PYTHONIOENCODING="utf-8"`.
+* Valve's API occasionally sends multiple matches with the same data but different match IDs. Although the bot should filter out the duplicates (with no_repeat_matches enabled), it will still track all of them, since it has no way of knowing which is the "real" one. After a while, there might be a slowly growing pile of duplicate matches that will never finish. Therefore, it's a good idea to run `ongoing` (to make sure no real matches are going on) and `untrack` from time to time to clean them up. In the future the program will be able to clean up these duplicates automatically.
 
 ## Todo
 
@@ -91,3 +92,4 @@ I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in o
 * Implement a better way to change server-specific setting features without having to discard existing server-specific settings
 * Twitch streams
 * Fetch and save kill score and net worth difference periodically
+* Auto de-duplication
