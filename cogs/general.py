@@ -76,7 +76,7 @@ class General:
 	async def welcomechannel(self, ctx, argument = None):
 		"""Sets the channel for posting welcome messages.
 
-		When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
+		When used without an argument, shows current setting. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
 		server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
 		if not argument:
 			chsetting = self.bot.get_channel(self.welcome_channel(server))

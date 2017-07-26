@@ -77,7 +77,7 @@ class MatchList:
 
 		return False
 
-class MatchUpdates:
+class Dota:
 	"""Cog for match updates"""
 
 	def __init__(self, bot):
@@ -287,7 +287,7 @@ class MatchUpdates:
 	async def matchchannel(self, ctx, argument = None):
 		"""Sets the channel for posting match updates.
 
-		When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
+		When used without an argument, shows current setting. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
 		server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
 		if not argument:
 			chsetting = self.bot.get_channel(self.matches_channel(server))
@@ -353,8 +353,8 @@ class MatchUpdates:
 				await self.bot.say("You have not the authority to issue such a command.")
 
 def setup(bot):
-	matchupdates = MatchUpdates(bot)
-	bot.add_cog(matchupdates)
+	dota = Dota(bot)
+	bot.add_cog(dota)
 	bot.ongoing_matches = MatchList()
-	bot.loop.create_task(matchupdates.get_match_data())
+	bot.loop.create_task(dota.get_match_data())
 	

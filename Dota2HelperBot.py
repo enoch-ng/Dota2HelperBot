@@ -98,25 +98,6 @@ except FileNotFoundError:
 except json.decoder.JSONDecodeError:
 	print("Could not load server_settings.json. Please make sure the syntax is correct, or delete the file and restart the bot to generate a new one.")
 
-'''def set_welcome_channel(server, channel):
-	bot.server_settings_list[server.id]["welcome_channel"] = channel.id
-	bot.save_server_settings()
-
-def set_welcome_messages(server, option):
-	bot.server_settings_list[server.id]["welcome_messages"] = option
-	bot.save_server_settings()
-
-async def say_welcome_channel(server, msg):
-	welcome_channel = bot.server_settings_list[server.id]["welcome_channel"]
-	if welcome_channel:
-		try:
-			await bot.send_message(bot.get_channel(welcome_channel), msg)
-		except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
-			await bot.send_message(server.default_channel, "I wish to post in the designated channel for welcome messages but am unable to, for I lack the required permissions (or else the channel does not exist).")
-			await bot.send_message(server.default_channel, msg)
-	else:
-		await bot.send_message(server.default_channel, msg)'''
-
 @bot.event
 async def on_ready():
 	if not bot.settings["owner"]:
@@ -154,61 +135,6 @@ async def on_ready():
 	print()
 
 	await bot.change_presence(game = discord.Game(name = "Type %shelp" % bot.settings["prefix"]))
-
-'''@bot.event
-async def on_member_join(member):
-	serv = member.server
-	if bot.server_settings_list[serv.id]["welcome_messages"]:
-		await say_welcome_channel(serv, "%s has joined the server. Welcome!" % member.mention)
-
-@bot.command(pass_context = True, no_pm = True)
-async def welcomechannel(ctx, argument = None):
-	"""Sets the channel for posting welcome messages.
-
-	When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
-	author = ctx.message.author
-	if bot.is_owner(author) or bot.is_admin(author):
-		server = ctx.message.server
-		if not argument:
-			channel = ctx.message.channel
-			set_welcome_channel(server, channel)
-			await bot.say("%s is now the designated channel for welcome messages." % channel.mention)
-		else:
-			for ch in server.channels:
-				if ch.mention == argument or ch.name == argument or ch.id == argument:
-					if ch.type == discord.ChannelType.text:
-						set_welcome_channel(server, ch)
-						await bot.say("%s is now the designated channel for welcome messages." % ch.mention)
-						return
-					else:
-						await bot.say("That channel cannot be used for such purposes.")
-						return
-			await bot.say("Alas, I know of no such channel.")
-	else:
-		await bot.say("You have not the authority to issue such a command.")
-
-@bot.command(pass_context = True, no_pm = True)
-async def greetnewmembers(ctx, argument = None):
-	"""Turns the welcome messages on or off.
-
-	When used without an argument, shows current setting. Use "off", "no", or "false" to turn welcome messages off. Anything else turns it on."""
-	server = ctx.message.server
-	if not argument:
-		if bot.server_settings_list[server.id]["welcome_messages"]:
-			await bot.say("Welcome messages are currently enabled.")
-		else:
-			await bot.say("Welcome messages are currently disabled.")
-	else:
-		author = ctx.message.author
-		if bot.is_owner(author) or bot.is_admin(author):
-			if argument == "off" or argument == "no" or argument == "false":
-				set_welcome_messages(server, False)
-				await bot.say("Welcome messages are now disabled.")
-			else:
-				set_welcome_messages(server, True)
-				await bot.say("Welcome messages are now enabled.")
-		else:
-			await bot.say("You have not the authority to issue such a command.")'''
 
 @bot.event
 async def on_command_error(error, ctx):
