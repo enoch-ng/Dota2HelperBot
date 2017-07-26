@@ -83,6 +83,15 @@ class MatchUpdates:
 	def __init__(self, bot):
 		self.bot = bot
 
+	def matches_channel(self, server):
+		return self.bot.server_settings_list[server.id]["matches_channel"]
+
+	def victory_messages(self, server):
+		return self.bot.server_settings_list[server.id]["victory_messages"]
+
+	def show_result(self, server):
+		return self.bot.server_settings_list[server.id]["show_result"]
+
 	def set_matches_channel(self, server, channel):
 		self.bot.server_settings_list[server.id]["matches_channel"] = channel.id
 		self.bot.save_server_settings()
@@ -103,7 +112,6 @@ class MatchUpdates:
 					try:
 						await self.bot.send_message(self.bot.get_channel(matches_channel), msg)
 					except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
-						await self.bot.send_message(s.default_channel, "I wish to post in the designated channel for match updates but am unable to, for I lack the required permissions (or else the channel does not exist).")
 						await self.bot.send_message(s.default_channel, msg)
 				else:
 					await self.bot.send_message(s.default_channel, msg)
@@ -114,13 +122,12 @@ class MatchUpdates:
 		for s in self.bot.servers:
 			if self.bot.server_settings_list[s.id]["victory_messages"]:
 				try:
-					msg = msg_no_winner if self.bot.server_settings_list[s.id]["show_result"] else msg_winner
+					msg = msg_winner if self.bot.server_settings_list[s.id]["show_result"] else msg_no_winner
 					matches_channel = self.bot.server_settings_list[s.id]["matches_channel"]
 					if matches_channel:
 						try:
 							await self.bot.send_message(self.bot.get_channel(matches_channel), msg)
 						except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
-							await self.bot.send_message(s.default_channel, "I wish to post in the designated channel for match updates but am unable to, for I lack the required permissions (or else the channel does not exist).")
 							await self.bot.send_message(s.default_channel, msg)
 					else:
 						await self.bot.send_message(s.default_channel, msg)
@@ -140,6 +147,7 @@ class MatchUpdates:
 		await self.say_match_start("The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
 
 	async def show_match_results(self, game):
+		# Not to be confused with show_result, the option for toggling whether the bot reveals the winner, duration, and kill score at the end
 		if "radiant_name" in game:
 			radiant_name = game["radiant_name"]
 		else:
@@ -280,14 +288,14 @@ class MatchUpdates:
 		"""Sets the channel for posting match updates.
 
 		When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
-		author = ctx.message.author
-		if self.bot.is_owner(author) or self.bot.is_admin(author):
-			server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
-			if not argument:
-				channel = ctx.message.channel
-				self.set_matches_channel(server, channel)
-				await self.bot.say("%s is now the designated channel for match updates." % channel.mention)
-			else:
+		server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
+		if not argument:
+			chsetting = self.bot.get_channel(self.matches_channel(server))
+			channel = server.default_channel if chsetting is None else chsetting
+			await self.bot.say("%s is currently the designated channel for match updates." % channel.mention)
+		else:
+			author = ctx.message.author
+			if self.bot.is_owner(author) or self.bot.is_admin(author):
 				for ch in server.channels:
 					if ch.mention == argument or ch.name == argument or ch.id == argument:
 						if ch.type == discord.ChannelType.text:
@@ -298,8 +306,9 @@ class MatchUpdates:
 							await self.bot.say("That channel cannot be used for such purposes.")
 							return
 				await self.bot.say("Alas, I know of no such channel.")
-		else:
-			await self.bot.say("You have not the authority to issue such a command.")
+			else:
+				await self.bot.say("You have not the authority to issue such a command.")
+
 
 	@commands.command(pass_context = True, no_pm = True)
 	async def victorymessages(self, ctx, argument = None):
@@ -308,10 +317,8 @@ class MatchUpdates:
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn victory messages off. Anything else turns it on."""
 		server = ctx.message.server
 		if not argument:
-			if self.bot.server_settings_list[server.id]["victory_messages"]:
-				await self.bot.say("Post-game messages are currently enabled.")
-			else:
-				await self.bot.say("Post-game messages are currently disabled.")
+			vmstate = "enabled" if self.victory_messages(server) else "disabled"
+			await self.bot.say("Post-game messages are currently %s." % vmstate)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):
@@ -331,10 +338,8 @@ class MatchUpdates:
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn this feature off. Anything else turns it on."""
 		server = ctx.message.server
 		if not argument:
-			if self.bot.server_settings_list[server.id]["show_result"]:
-				await self.bot.say("Match results in post-game messages are currently enabled.")
-			else:
-				await self.bot.say("Match results in post-game messages are currently disabled.")
+			srstate = "enabled" if self.show_result(server) else "disabled"
+			await self.bot.say("Match results in post-game messages are currently %s." % srstate)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):

@@ -49,11 +49,11 @@ Of these fields, only `token` and `apikey` are required. The bot will attempt to
 
 `ongoing` - Shows matches that are currently being “tracked” by the bot.
 
-`welcomechannel` - Sets the channel for posting welcome messages. When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID.
+`welcomechannel` - Sets the channel for posting welcome messages. When used without an argument, shows current setting. Otherwise, accepts a channel mention, a channel name, or a channel ID.
 
 `matchchannel` - Sets the channel for posting match updates. When used without an argument, uses the current channel. Otherwise, accepts a channel mention, a channel name, or a channel ID.
 
-`greetnewmembers` - Turns the welcome messages on or off. When used without an argument, shows current setting. Use "off", "no", or "false" to turn welcome messages off. Anything else turns it on.
+`welcome` - Turns the welcome messages on or off. When used without an argument, shows current setting. Use "off", "no", or "false" to turn welcome messages off. Anything else turns it on.
 
 `victorymessages` - Turns the victory messages on or off. When used without an argument, shows current setting. Use "off", "no", or "false" to turn victory messages off. Anything else turns it on.
 

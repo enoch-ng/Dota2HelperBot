@@ -98,7 +98,7 @@ except FileNotFoundError:
 except json.decoder.JSONDecodeError:
 	print("Could not load server_settings.json. Please make sure the syntax is correct, or delete the file and restart the bot to generate a new one.")
 
-def set_welcome_channel(server, channel):
+'''def set_welcome_channel(server, channel):
 	bot.server_settings_list[server.id]["welcome_channel"] = channel.id
 	bot.save_server_settings()
 
@@ -115,7 +115,7 @@ async def say_welcome_channel(server, msg):
 			await bot.send_message(server.default_channel, "I wish to post in the designated channel for welcome messages but am unable to, for I lack the required permissions (or else the channel does not exist).")
 			await bot.send_message(server.default_channel, msg)
 	else:
-		await bot.send_message(server.default_channel, msg)
+		await bot.send_message(server.default_channel, msg)'''
 
 @bot.event
 async def on_ready():
@@ -155,7 +155,7 @@ async def on_ready():
 
 	await bot.change_presence(game = discord.Game(name = "Type %shelp" % bot.settings["prefix"]))
 
-@bot.event
+'''@bot.event
 async def on_member_join(member):
 	serv = member.server
 	if bot.server_settings_list[serv.id]["welcome_messages"]:
@@ -208,7 +208,7 @@ async def greetnewmembers(ctx, argument = None):
 				set_welcome_messages(server, True)
 				await bot.say("Welcome messages are now enabled.")
 		else:
-			await bot.say("You have not the authority to issue such a command.")
+			await bot.say("You have not the authority to issue such a command.")'''
 
 @bot.event
 async def on_command_error(error, ctx):
