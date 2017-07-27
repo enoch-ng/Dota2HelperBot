@@ -65,9 +65,9 @@ Of these fields, only `token` and `apikey` are required. The bot will attempt to
 
 `untrack` - Removes all matches from the tracking list. Can only be used by the bot owner. Note that if this is called while any tracked matches are going on, they will probably be added right back to the list on the next API call!
 
-`addleague` - Adds to the list of notable leagues. Can only be used by the bot owner.
+`addleague` - Adds to the list of notable leagues. Can only be used by the bot owner. Does not currently affect the notable_leagues field in settings.json, so any changes made using this command are not persistent between restarts.
 
-`rmleague` - Removes from the list of notable leagues. Can only be used by the bot owner.
+`rmleague` - Removes from the list of notable leagues. Can only be used by the bot owner. Does not currently affect the notable_leagues field in settings.json, so any changes made using this command are not persistent between restarts.
 
 Any action that changes a server-specific setting must be performed by a server admin or the bot owner.
 

@@ -117,6 +117,34 @@ class Dota:
 				except discord.HTTPException:
 					pass
 
+	def get_names_from_league_game(self, game):
+		# Gets team names from a game provided by a GetLiveLeagueGames call. If a team has no name, it is "Radiant" or "Dire".
+		if "radiant_team" in game:
+			radiant_name = game["radiant_team"]["team_name"]
+		else:
+			radiant_name = "Radiant"
+
+		if "dire_team" in game:
+			dire_name = game["dire_team"]["team_name"]
+		else:
+			dire_name = "Dire"
+
+		return (radiant_name, dire_name)
+
+	def get_names_from_match_details(self, game):
+		# Gets team names from a game provided by a GetMatchDetails call. If a team has no name, it is "Radiant" or "Dire".
+		if "radiant_name" in game:
+			radiant_name = game["radiant_name"]
+		else:
+			radiant_name = "Radiant"
+
+		if "dire_name" in game:
+			dire_name = game["dire_name"]
+		else:
+			dire_name = "Dire"
+
+		return (radiant_name, dire_name)
+
 	async def show_new_match(self, game, radiant_name, dire_name, gameno):
 		if game["series_type"] == 0:
 			series_desc = ""
@@ -131,15 +159,7 @@ class Dota:
 
 	async def show_match_results(self, game):
 		# Not to be confused with show_result, the option for toggling whether the bot reveals the winner, duration, and kill score at the end
-		if "radiant_name" in game:
-			radiant_name = game["radiant_name"]
-		else:
-			radiant_name = "Radiant"
-
-		if "dire_name" in game:
-			dire_name = game["dire_name"]
-		else:
-			dire_name = "Dire"
+		radiant_name, dire_name = self.get_names_from_match_details(game)
 		
 		if game["radiant_win"]:
 			winner = radiant_name
@@ -200,16 +220,7 @@ class Dota:
 					if game["match_id"] in self.bot.ongoing_matches:
 						finished_matches.remove(game["match_id"])
 					else:
-						if "radiant_team" in game:
-							radiant_name = game["radiant_team"]["team_name"]
-						else:
-							radiant_name = "Radiant"
-
-						if "dire_team" in game:
-							dire_name = game["dire_team"]["team_name"]
-						else:
-							dire_name = "Dire"
-
+						radiant_name, dire_name = self.get_names_from_league_game(game)
 						gameno = game["radiant_series_wins"] + game["dire_series_wins"] + 1
 
 						if self.bot.settings["verbose"]:
@@ -231,7 +242,7 @@ class Dota:
 
 				# Fetch specific game data
 				try:
-					self.make_request(MATCH_DETAILS_URL, matchid = finished.matchid)
+					postgame = self.make_request(MATCH_DETAILS_URL, matchid = finished.matchid)
 				except Exception:
 					continue
 
@@ -242,15 +253,7 @@ class Dota:
 					continue
 
 				if self.bot.settings["verbose"]:
-					if "radiant_name" in game:
-						radiant_name = game["radiant_name"]
-					else:
-						radiant_name = "Radiant"
-
-					if "dire_name" in game:
-						dire_name = game["dire_name"]
-					else:
-						dire_name = "Dire"
+					radiant_name, dire_name = self.get_names_from_match_details(game)
 
 					try:
 						print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
@@ -299,7 +302,7 @@ class Dota:
 	async def addleague(self, ctx, league: int):
 		"""Adds to the list of notable leagues.
 
-		Can only be used by the bot owner."""
+		Can only be used by the bot owner. Does not currently affect the notable_leagues field in settings.json, so any changes made using this command are not persistent between restarts."""
 		if self.bot.is_owner(ctx.message.author):
 			leagues = self.bot.get_notable_leagues()
 			if league in leagues:
@@ -314,7 +317,7 @@ class Dota:
 	async def rmleague(self, ctx, league: int):
 		"""Removes from the list of notable leagues.
 
-		Can only be used by the bot owner."""
+		Can only be used by the bot owner. Does not currently affect the notable_leagues field in settings.json, so any changes made using this command are not persistent between restarts."""
 		if self.bot.is_owner(ctx.message.author):
 			leagues = self.bot.get_notable_leagues()
 			if league in leagues:
