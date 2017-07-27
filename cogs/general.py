@@ -74,20 +74,20 @@ class General:
 			await self.say_welcome_channel(serv, "%s has joined the server. Welcome!" % member.mention)
 
 	@commands.command(pass_context = True, no_pm = True)
-	async def welcomechannel(self, ctx, argument = None):
+	async def welcomechannel(self, ctx, channel = None):
 		"""Sets the channel for posting welcome messages.
 
 		When used without an argument, shows current setting. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
 		server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
-		if not argument:
+		if not channel:
 			chsetting = self.bot.get_channel(self.welcome_channel(server))
-			channel = server.default_channel if chsetting is None else chsetting
-			await self.bot.say("%s is currently the designated channel for welcome messages." % channel.mention)
+			ch = server.default_channel if chsetting is None else chsetting
+			await self.bot.say("%s is currently the designated channel for welcome messages." % ch.mention)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):
 				for ch in server.channels:
-					if ch.mention == argument or ch.name == argument or ch.id == argument:
+					if ch.mention == channel or ch.name == channel or ch.id == channel:
 						if ch.type == discord.ChannelType.text:
 							self.set_welcome_channel(server, ch)
 							await self.bot.say("%s is now the designated channel for welcome messages." % ch.mention)
@@ -100,18 +100,18 @@ class General:
 				await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True, no_pm = True)
-	async def welcome(self, ctx, argument = None):
+	async def welcome(self, ctx, option = None):
 		"""Turns the welcome messages on or off.
 
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn welcome messages off. Anything else turns it on."""
 		server = ctx.message.server
-		if not argument:
+		if not option:
 			wmstate = "enabled" if self.welcome_messages(server) else "disabled"
 			await self.bot.say("Welcome messages are currently %s." % wmstate)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):
-				if argument == "off" or argument == "no" or argument == "false":
+				if option == "off" or option == "no" or option == "false":
 					self.set_welcome_messages(server, False)
 					await self.bot.say("Welcome messages are now disabled.")
 				else:

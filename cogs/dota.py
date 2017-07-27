@@ -299,29 +299,29 @@ class Dota:
 			await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True)
-	async def addleague(self, ctx, league: int):
+	async def addleague(self, ctx, league_id: int):
 		"""Adds to the list of notable leagues.
 
 		Can only be used by the bot owner. Does not currently affect the notable_leagues field in settings.json, so any changes made using this command are not persistent between restarts."""
 		if self.bot.is_owner(ctx.message.author):
 			leagues = self.bot.get_notable_leagues()
-			if league in leagues:
+			if league_id in leagues:
 				await self.bot.say("Oh? I am already tracking that league.")
 			else:
-				self.bot.add_notable_league(league)
+				self.bot.add_notable_league(league_id)
 				await self.bot.say("I shall keep an eye out for matches in that league.")
 		else:
 			await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True)
-	async def rmleague(self, ctx, league: int):
+	async def rmleague(self, ctx, league_id: int):
 		"""Removes from the list of notable leagues.
 
 		Can only be used by the bot owner. Does not currently affect the notable_leagues field in settings.json, so any changes made using this command are not persistent between restarts."""
 		if self.bot.is_owner(ctx.message.author):
 			leagues = self.bot.get_notable_leagues()
-			if league in leagues:
-				self.bot.remove_notable_league(league)
+			if league_id in leagues:
+				self.bot.remove_notable_league(league_id)
 				await self.bot.say("So be it. Matches in that league concern me no longer.")
 			else:
 				await self.bot.say("I am not tracking that league. How can we erase what never existed?")
@@ -329,20 +329,20 @@ class Dota:
 			await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True, no_pm = True)
-	async def matchchannel(self, ctx, argument = None):
+	async def matchchannel(self, ctx, channel = None):
 		"""Sets the channel for posting match updates.
 
 		When used without an argument, shows current setting. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
 		server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
-		if not argument:
+		if not channel:
 			chsetting = self.bot.get_channel(self.bot.get_matches_channel(server))
-			channel = server.default_channel if chsetting is None else chsetting
-			await self.bot.say("%s is currently the designated channel for match updates." % channel.mention)
+			ch = server.default_channel if chsetting is None else chsetting
+			await self.bot.say("%s is currently the designated channel for match updates." % ch.mention)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):
 				for ch in server.channels:
-					if ch.mention == argument or ch.name == argument or ch.id == argument:
+					if ch.mention == channel or ch.name == channel or ch.id == channel:
 						if ch.type == discord.ChannelType.text:
 							self.bot.set_matches_channel(server, ch)
 							await self.bot.say("%s is now the designated channel for match updates." % ch.mention)
@@ -355,18 +355,18 @@ class Dota:
 				await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True, no_pm = True)
-	async def victorymessages(self, ctx, argument = None):
+	async def victorymessages(self, ctx, option = None):
 		"""Turns the victory messages on or off.
 
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn victory messages off. Anything else turns it on."""
 		server = ctx.message.server
-		if not argument:
+		if not option:
 			vmstate = "enabled" if self.bot.get_victory_messages(server) else "disabled"
 			await self.bot.say("Post-game messages are currently %s." % vmstate)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):
-				if argument == "off" or argument == "no" or argument == "false":
+				if option == "off" or option == "no" or option == "false":
 					self.bot.set_victory_messages(server, False)
 					await self.bot.say("Post-game messages are now disabled.")
 				else:
@@ -376,18 +376,18 @@ class Dota:
 				await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True, no_pm = True)
-	async def showresult(self, ctx, argument = None):
+	async def showresult(self, ctx, option = None):
 		"""Controls whether or not to display match results.
 
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn this feature off. Anything else turns it on."""
 		server = ctx.message.server
-		if not argument:
+		if not option:
 			srstate = "enabled" if self.bot.get_show_result(server) else "disabled"
 			await self.bot.say("Match results in post-game messages are currently %s." % srstate)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):
-				if argument == "off" or argument == "no" or argument == "false":
+				if option == "off" or option == "no" or option == "false":
 					self.bot.set_show_result(server, False)
 					await self.bot.say("Match results in post-game messages are now disabled.")
 				else:
