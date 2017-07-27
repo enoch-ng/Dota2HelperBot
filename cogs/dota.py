@@ -71,6 +71,9 @@ class MatchList:
 
 		raise KeyError
 
+	def clear(self):
+		self.matches.clear()
+
 	def match_exists_with_teams(self, radiant_team, dire_team, gameno):
 		for match in self.matches:
 			if match.radiant_team == radiant_team and match.dire_team == dire_team and match.gameno == gameno:
@@ -298,6 +301,20 @@ class Dota:
 			else:
 				await self.bot.say("You have not the authority to issue such a command.")
 
+	@commands.command(pass_context = True)
+	async def untrack(self, ctx):
+		"""Stops tracking all ongoing matches.
+
+		Can only be used by the bot owner. Note that if this is called while any tracked matches are going on, they will probably be added right back to the list on the next API call."""
+		author = ctx.message.author
+		if self.bot.is_owner(author):
+			if len(self.bot.ongoing_matches) > 0:
+				self.bot.ongoing_matches.clear()
+				await self.bot.say("Done. Let them be forgotten like the dust which blows in the wind.")
+			else:
+				await self.bot.say("There are no ongoing matches. How can we erase what never existed?")
+		else:
+			await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True, no_pm = True)
 	async def victorymessages(self, ctx, argument = None):

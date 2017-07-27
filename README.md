@@ -63,11 +63,11 @@ Of these fields, only `token` and `apikey` are required. The bot will attempt to
 
 `contact` - Sends a message to the bot owner. Has a cooldown of 60 seconds.
 
+`untrack` - Removes all matches from the tracking list. Can only be used by the bot owner. Note that if this is called while any tracked matches are going on, they will probably be added right back to the list on the next API call!
+
 Any action that changes a server-specific setting must be performed by a server admin or the bot owner.
 
 ## Unimplemented commands
-
-`untrack` - Removes all matches from the tracking list. Can only be used by the bot owner.
 
 `status` - Shows the game state of all currently tracked matches.
 
