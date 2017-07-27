@@ -67,9 +67,15 @@ if not settings["prefix"]:
 class Bot(commands.Bot):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
+		self.formatter = commands.formatter.HelpFormatter()
 		self.settings = {}
 		self.server_settings_list = {}
 		# Maybe put the above code in this block, so the bot.settings = settings line is not needed? But I would need a way to change the prefix T.T
+
+	async def send_cmd_help(self, ctx):
+		pages = self.formatter.format_help_for(ctx, ctx.command)
+		for page in pages:
+			await self.send_message(ctx.message.channel, page)
 
 	def is_owner(self, user):
 		return user.id == self.settings["owner"]
@@ -170,9 +176,9 @@ async def on_ready():
 async def on_command_error(error, ctx):
 	channel = ctx.message.channel
 	if isinstance(error, commands.MissingRequiredArgument):
-		await bot.send_message(channel, "Truly, your wish is my command, but I cannot carry out your orders without a suitable argument.")
+		await bot.send_cmd_help(ctx)
 	elif isinstance(error, commands.BadArgument):
-		await bot.send_message(channel, "Truly, your wish is my command, but I cannot make head nor tail of the argument you do provide.")
+		await bot.send_message(channel, "Truly, your wish is my command, but I cannot make head nor tail of the argument you provide.")
 	elif isinstance(error, commands.CommandNotFound):
 		# This is almost as ugly as Manta on Medusa
 		await bot.send_message(channel, "I fear I know not of this \"%s\". Is it perchance a new Hero?" % ctx.message.content[len(bot.settings["prefix"]):].partition(' ')[0])
