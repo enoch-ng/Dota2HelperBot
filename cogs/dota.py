@@ -191,7 +191,7 @@ class Dota:
 			if self.bot.settings["verbose"]:
 				print(err)
 			if response.status_code == 403:
-				print("Your API key was not accepted. Please make sure it is valid.")
+				print("The API key provided in data/settings.json was not accepted. Please make sure it is valid.")
 			raise
 
 	async def get_match_data(self):

@@ -192,4 +192,7 @@ async def on_command_error(error, ctx):
 
 bot.load_extension("cogs.general")
 bot.load_extension("cogs.dota")
-bot.run(bot.settings["token"])
+try:
+	bot.run(bot.settings["token"])
+except discord.errors.LoginFailure:
+	print("The token provided in data/settings.json was not accepted. Please make sure it is valid.")
