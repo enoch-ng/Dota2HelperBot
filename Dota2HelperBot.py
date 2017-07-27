@@ -108,6 +108,12 @@ class Bot(commands.Bot):
 		self.server_settings_list[server.id]["show_result"] = option
 		self.save_server_settings()
 
+	def add_notable_league(self, league):
+		self.settings["notable_leagues"].append(league)
+
+	def remove_notable_league(self, league):
+		self.settings["notable_leagues"].remove(league)
+
 bot = Bot(command_prefix = settings["prefix"], description = DESC)
 bot.settings = settings
 bot.next_interval = bot.settings["api_interval"]

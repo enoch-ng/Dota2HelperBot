@@ -162,18 +162,27 @@ class Dota:
 		msg_no_winner = "%s vs. %s has ended. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, game["match_id"])
 		await self.say_victory_message(msg_winner, msg_no_winner)
 
+	def make_request(self, url, matchid = ""):
+		try:
+			response = requests.get(url, params = {"key": self.bot.settings["apikey"], "match_id": matchid})
+			response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
+			return response
+		except Exception as err:
+			if self.bot.settings["verbose"]:
+				print(err)
+			if response.status_code == 403:
+				print("Your API key was not accepted. Please make sure it is valid.")
+			raise
+
 	async def get_match_data(self):
 		await self.bot.wait_until_ready()
 		while not self.bot.is_closed:
 			await asyncio.sleep(self.bot.next_interval)
 			self.bot.next_interval = self.bot.settings["api_interval"]
 			try:
-				response = requests.get(LIVE_LEAGUE_GAMES_URL, params = {"key": self.bot.settings["apikey"]})
-				response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
-			except Exception as err:
-				if self.bot.settings["verbose"]:
-					print(err)
-				continue
+				response = self.make_request(LIVE_LEAGUE_GAMES_URL)
+			except Exception:
+				continue # Just try again next time
 
 			current_time = time.time()
 
@@ -222,12 +231,9 @@ class Dota:
 
 				# Fetch specific game data
 				try:
-					postgame = requests.get(MATCH_DETAILS_URL, params = {"match_id": finished.matchid, "key": self.bot.settings["apikey"]})
-					postgame.raise_for_status()
-				except Exception as err:
-					if self.bot.settings["verbose"]:
-						print(err)
-					continue # Just try again next time
+					self.make_request(MATCH_DETAILS_URL, matchid = finished.matchid)
+				except Exception:
+					continue
 
 				game = postgame.json()["result"]
 
@@ -275,6 +281,50 @@ class Dota:
 		else:
 			await self.bot.say("There are as yet no leagues being tracked.")
 
+	@commands.command(pass_context = True)
+	async def untrack(self, ctx):
+		"""Stops tracking all ongoing matches.
+
+		Can only be used by the bot owner. Note that if this is called while any tracked matches are going on, they will probably be added right back to the list on the next API call."""
+		if self.bot.is_owner(ctx.message.author):
+			if len(self.bot.ongoing_matches) > 0:
+				self.bot.ongoing_matches.clear()
+				await self.bot.say("Done. Let them be forgotten like the dust which blows in the wind.")
+			else:
+				await self.bot.say("There are no ongoing matches. How can we erase what never existed?")
+		else:
+			await self.bot.say("You have not the authority to issue such a command.")
+
+	@commands.command(pass_context = True)
+	async def addleague(self, ctx, league: int):
+		"""Adds to the list of notable leagues.
+
+		Can only be used by the bot owner."""
+		if self.bot.is_owner(ctx.message.author):
+			leagues = self.bot.get_notable_leagues()
+			if league in leagues:
+				await self.bot.say("Oh? I am already tracking that league.")
+			else:
+				self.bot.add_notable_league(league)
+				await self.bot.say("I shall keep an eye out for matches in that league.")
+		else:
+			await self.bot.say("You have not the authority to issue such a command.")
+
+	@commands.command(pass_context = True)
+	async def rmleague(self, ctx, league: int):
+		"""Removes from the list of notable leagues.
+
+		Can only be used by the bot owner."""
+		if self.bot.is_owner(ctx.message.author):
+			leagues = self.bot.get_notable_leagues()
+			if league in leagues:
+				self.bot.remove_notable_league(league)
+				await self.bot.say("So be it. Matches in that league concern me no longer.")
+			else:
+				await self.bot.say("I am not tracking that league. How can we erase what never existed?")
+		else:
+			await self.bot.say("You have not the authority to issue such a command.")
+
 	@commands.command(pass_context = True, no_pm = True)
 	async def matchchannel(self, ctx, argument = None):
 		"""Sets the channel for posting match updates.
@@ -300,21 +350,6 @@ class Dota:
 				await self.bot.say("Alas, I know of no such channel.")
 			else:
 				await self.bot.say("You have not the authority to issue such a command.")
-
-	@commands.command(pass_context = True)
-	async def untrack(self, ctx):
-		"""Stops tracking all ongoing matches.
-
-		Can only be used by the bot owner. Note that if this is called while any tracked matches are going on, they will probably be added right back to the list on the next API call."""
-		author = ctx.message.author
-		if self.bot.is_owner(author):
-			if len(self.bot.ongoing_matches) > 0:
-				self.bot.ongoing_matches.clear()
-				await self.bot.say("Done. Let them be forgotten like the dust which blows in the wind.")
-			else:
-				await self.bot.say("There are no ongoing matches. How can we erase what never existed?")
-		else:
-			await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True, no_pm = True)
 	async def victorymessages(self, ctx, argument = None):
