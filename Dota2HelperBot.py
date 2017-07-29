@@ -15,7 +15,7 @@ BOT_DEFAULTS = {
 	"token": "",
 	"prefix": ";",
 	"owner": "",
-	"changenick_interval": 600,
+	"changenick_interval": 3600,
 	"api_interval": 20,
 	"apikey": "",
 	"filter_matches": True,
@@ -30,7 +30,8 @@ SERVER_DEFAULTS = {
 	"matches_channel": "",
 	"welcome_messages": False,
 	"victory_messages": True,
-	"show_result": True
+	"show_result": True,
+	"randomly_change_nick": False
 }
 CDMESSAGES = ["It is not time yet.", "'Tis not yet time.", "Not yet.",
 	"I need more time.", "I am not ready.", "It is not yet time."]
@@ -70,6 +71,7 @@ class Bot(commands.Bot):
 		self.formatter = commands.formatter.HelpFormatter()
 		self.settings = {}
 		self.server_settings_list = {}
+		self.nick = ""
 		# Maybe put the above code in this block, so the bot.settings = settings line is not needed? But I would need a way to change the prefix T.T
 
 	async def send_cmd_help(self, ctx):
@@ -108,6 +110,11 @@ class Bot(commands.Bot):
 				print("Generating server-specific settings for %s..." % server.name)
 			self.server_settings_list[server.id] = dict(SERVER_DEFAULTS)
 			self.save_server_settings()
+		else:
+			for setting, default in SERVER_DEFAULTS.items():
+				if setting not in self.server_settings_list[server.id]:
+					self.server_settings_list[server.id][setting] = default
+					self.save_server_settings()
 
 	def set_matches_channel(self, server, channel):
 		self.server_settings_list[server.id]["matches_channel"] = channel.id

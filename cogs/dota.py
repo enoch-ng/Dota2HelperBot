@@ -88,7 +88,8 @@ class Dota:
 		self.bot = bot
 
 	async def say_match_start(self, msg):
-		for s in self.bot.servers:
+		serverlist = list(self.bot.servers)
+		for s in serverlist:
 			try: # Catching potential HTTPExceptions here is actually important, because if we don't then the background task will stop
 				matches_channel = self.bot.server_settings_list[s.id]["matches_channel"]
 				if matches_channel:
@@ -102,7 +103,8 @@ class Dota:
 				pass
 
 	async def say_victory_message(self, msg_winner, msg_no_winner):
-		for s in self.bot.servers:
+		serverlist = list(self.bot.servers)
+		for s in serverlist:
 			if self.bot.server_settings_list[s.id]["victory_messages"]:
 				try:
 					msg = msg_winner if self.bot.server_settings_list[s.id]["show_result"] else msg_no_winner

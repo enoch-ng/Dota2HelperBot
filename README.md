@@ -93,7 +93,6 @@ Any action that changes a server-specific setting must be performed by a server 
 
 * Implement unimplemented commands
 * Implement subcommands
-* Implement a better way to change server-specific setting features without having to discard existing server-specific settings
 * Twitch streams
 * Fetch and save kill score and net worth difference periodically
 * Auto de-duplication

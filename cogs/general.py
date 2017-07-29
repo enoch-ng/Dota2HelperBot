@@ -21,23 +21,32 @@ class General:
 	def __init__(self, bot):
 		self.bot = bot
 
-	async def set_nick(self, newnick):
-		for server in self.bot.servers:
+	async def set_nick(self, newnick = None):
+		if newnick is None:
+			newnick = self.bot.nick
+		else:
+			self.bot.nick = newnick
+
+		serverlist = list(self.bot.servers)
+		for server in serverlist:
 			try:
-				await self.bot.change_nickname(server.me, "%s Bot" % newnick)
+				if self.bot.server_settings_list[server.id]["randomly_change_nick"]:
+						await self.bot.change_nickname(server.me, "%s Bot" % newnick)
+				else:
+						await self.bot.change_nickname(server.me, "Dota 2 Helper Bot")
 			except discord.Forbidden:
 				pass
 
 	def choose_nick(self):
-		current_nick = list(self.bot.servers)[0].me.nick # Since the nickname should be the same for all servers, it shouldn't matter that self.bot.servers isn't always in the same order
 		newnick = random.choice(BOTNAMES)
-		while newnick == current_nick:
+		while newnick == self.bot.nick:
 			newnick = random.choice(BOTNAMES) # Keep rerolling until we get a different name
 		return newnick
 
 	# Change nickname every 10 minutes
 	async def change_nick(self):
 		await self.bot.wait_until_ready()
+		await asyncio.sleep(10) # Just to be safe
 		while not self.bot.is_closed:
 			serverlist = list(self.bot.servers)
 			if len(serverlist) > 0:
@@ -47,11 +56,19 @@ class General:
 	async def on_server_join(self, server):
 		await self.set_nick(self.choose_nick())
 
+	async def on_member_join(self, member):
+		serv = member.server
+		if self.bot.server_settings_list[serv.id]["welcome_messages"]:
+			await self.say_welcome_channel(serv, "%s has joined the server. Welcome!" % member.mention)
+
 	def welcome_channel(self, server):
 		return self.bot.server_settings_list[server.id]["welcome_channel"]
 
 	def welcome_messages(self, server):
 		return self.bot.server_settings_list[server.id]["welcome_messages"]
+
+	def randomly_change_nick(self, server):
+		return self.bot.server_settings_list[server.id]["randomly_change_nick"]
 
 	def set_welcome_channel(self, server, channel):
 		self.bot.server_settings_list[server.id]["welcome_channel"] = channel.id
@@ -59,6 +76,10 @@ class General:
 
 	def set_welcome_messages(self, server, option):
 		self.bot.server_settings_list[server.id]["welcome_messages"] = option
+		self.bot.save_server_settings()
+
+	def set_randomly_change_nick(self, server, option):
+		self.bot.server_settings_list[server.id]["randomly_change_nick"] = option
 		self.bot.save_server_settings()
 
 	async def say_welcome_channel(self, server, msg):
@@ -70,11 +91,6 @@ class General:
 				await self.bot.send_message(server.default_channel, WELCOME_CHANNEL_NOT_FOUND)
 		else:
 			await self.bot.send_message(server.default_channel, msg)
-
-	async def on_member_join(self, member):
-		serv = member.server
-		if self.bot.server_settings_list[serv.id]["welcome_messages"]:
-			await self.say_welcome_channel(serv, "%s has joined the server. Welcome!" % member.mention)
 
 	@commands.command(pass_context = True, no_pm = True)
 	async def welcomechannel(self, ctx, channel = None):
@@ -123,11 +139,38 @@ class General:
 			else:
 				await self.bot.say("You have not the authority to issue such a command.")
 
-	@commands.command()
-	async def changename(self):
-		"""Chooses a random new nickname for the bot."""
-		await self.bot.say("Too long have I endured this moniker. It is time to begin anew.")
-		await self.set_nick(self.choose_nick())
+	@commands.command(pass_context = True, no_pm = True)
+	async def randomlychangename(self, ctx, option = None):
+		"""Turns the nickname changing feature on or off.
+
+		When used without an argument, shows current setting. Use "off", "no", or "false" to turn the nickname changing off. Anything else turns it on."""
+		server = ctx.message.server
+		if not option:
+			rcnstate = "enabled" if self.randomly_change_nick(server) else "disabled"
+			await self.bot.say("Random nickname changing is currently %s." % rcnstate)
+		else:
+			author = ctx.message.author
+			if self.bot.is_owner(author) or self.bot.is_admin(author):
+				if option == "off" or option == "no" or option == "false":
+					self.set_randomly_change_nick(server, False)
+					await self.set_nick()
+					await self.bot.say("Random nickname changing is now disabled.")
+				else:
+					self.set_randomly_change_nick(server, True)
+					await self.set_nick(self.choose_nick())
+					await self.bot.say("Random nickname changing is now enabled.")
+			else:
+				await self.bot.say("You have not the authority to issue such a command.")
+
+	@commands.command(pass_context = True)
+	@commands.cooldown(1, 5, commands.BucketType.user)
+	async def changename(self, ctx):
+		"""Chooses a random new nickname for the bot (5s cooldown)."""
+		if self.randomly_change_nick(ctx.message.server):
+			await self.bot.say("Too long have I endured this moniker. It is time to begin anew.")
+			await self.set_nick(self.choose_nick())
+		else:
+			await self.bot.say("I do not care for such things. Use the `randomlychangename` command to change this.")
 
 	@commands.command()
 	async def join(self):
