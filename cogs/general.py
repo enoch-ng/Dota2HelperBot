@@ -23,7 +23,10 @@ class General:
 
 	async def set_nick(self, newnick):
 		for server in self.bot.servers:
-			await self.bot.change_nickname(server.me, "%s Bot" % newnick)
+			try:
+				await self.bot.change_nickname(server.me, "%s Bot" % newnick)
+			except discord.Forbidden:
+				pass
 
 	def choose_nick(self):
 		current_nick = list(self.bot.servers)[0].me.nick # Since the nickname should be the same for all servers, it shouldn't matter that self.bot.servers isn't always in the same order
