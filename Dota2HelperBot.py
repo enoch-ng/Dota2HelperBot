@@ -102,6 +102,13 @@ class Bot(commands.Bot):
 		with open("data/server_settings.json", "w") as serv_set:
 			json.dump(self.server_settings_list, serv_set, indent = 4)
 
+	def autogenerate_server_settings(self, server):
+		if server.id not in self.server_settings_list:
+			if self.settings["verbose"]:
+				print("Generating server-specific settings for %s..." % server.name)
+			self.server_settings_list[server.id] = dict(SERVER_DEFAULTS)
+			self.save_server_settings()
+
 	def set_matches_channel(self, server, channel):
 		self.server_settings_list[server.id]["matches_channel"] = channel.id
 		self.save_server_settings()
@@ -146,21 +153,12 @@ async def on_ready():
 		print("The bot owner could not be determined. Please check your settings.json file.")
 		print()
 
-	any_new_servers = False
 	for server in bot.servers:
-		if server.id not in bot.server_settings_list:
-			if bot.settings["verbose"]:
-				print("Generating server-specific settings for %s..." % server.name)
-			bot.server_settings_list[server.id] = dict(SERVER_DEFAULTS)
-			any_new_servers = True
-
-	if any_new_servers:
-		bot.save_server_settings()
-		if bot.settings["verbose"]:
-			print()
+		bot.autogenerate_server_settings(server)
 
 	bot.joinurl = "https://discordapp.com/oauth2/authorize?&client_id=%s&scope=bot" % bot.user.id
 
+	print()
 	print("Dota2HelperBot, a Discord bot created by Blanedale")
 	print()
 	print("Connected to the following servers:")
@@ -171,6 +169,10 @@ async def on_ready():
 	print()
 
 	await bot.change_presence(game = discord.Game(name = "Type %shelp" % bot.settings["prefix"]))
+
+@bot.event
+async def on_server_join(server):
+	bot.autogenerate_server_settings(server)
 
 @bot.event
 async def on_command_error(error, ctx):
