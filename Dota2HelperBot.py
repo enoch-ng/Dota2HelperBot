@@ -99,6 +99,9 @@ class Bot(commands.Bot):
 
 	def get_notable_leagues(self):
 		return self.settings["notable_leagues"]
+
+	def get_prefix(self):
+		return self.settings["prefix"]
 	
 	def save_server_settings(self):
 		with open("data/server_settings.json", "w") as serv_set:

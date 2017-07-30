@@ -73,6 +73,8 @@ Of these fields, only `token` and `apikey` are required. The bot will attempt to
 
 `globalnamereset` - Resets the bot's nickname in all servers. Can only be used by the bot owner. This command should rarely be used.
 
+`faq` - Displays a basic FAQ.
+
 Any action that changes a server-specific setting must be performed by a server admin or the bot owner.
 
 ## Unimplemented commands
