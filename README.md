@@ -69,6 +69,10 @@ Of these fields, only `token` and `apikey` are required. The bot will attempt to
 
 `rmleague` - Removes from the list of notable leagues. Can only be used by the bot owner. Does not currently affect the notable_leagues field in settings.json, so any changes made using this command are not persistent between restarts.
 
+`autochangename` - Turns the nickname changing feature on or off. When used without an argument, shows current setting. Use "off", "no", or "false" to turn the nickname changing off. Anything else turns it on. Setting this option to false will also reset the bot's nickname.
+
+`globalnamereset` - Resets the bot's nickname in all servers. Can only be used by the bot owner. This command should rarely be used.
+
 Any action that changes a server-specific setting must be performed by a server admin or the bot owner.
 
 ## Unimplemented commands

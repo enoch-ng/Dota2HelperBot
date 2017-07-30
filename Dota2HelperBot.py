@@ -31,7 +31,7 @@ SERVER_DEFAULTS = {
 	"welcome_messages": False,
 	"victory_messages": True,
 	"show_result": True,
-	"randomly_change_nick": False
+	"auto_change_nick": False
 }
 CDMESSAGES = ["It is not time yet.", "'Tis not yet time.", "Not yet.",
 	"I need more time.", "I am not ready.", "It is not yet time."]
@@ -166,7 +166,7 @@ async def on_ready():
 	bot.joinurl = "https://discordapp.com/oauth2/authorize?&client_id=%s&scope=bot" % bot.user.id
 
 	print()
-	print("Dota2HelperBot, a Discord bot created by Blanedale")
+	print("Dota 2 Helper Bot, a Discord bot created by Blanedale")
 	print()
 	print("Connected to the following servers:")
 	for server in bot.servers:
