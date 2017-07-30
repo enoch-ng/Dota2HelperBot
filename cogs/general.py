@@ -96,17 +96,15 @@ class General:
 		"""Resets the bot's nickname in all servers.
 
 		Can only be used by the bot owner. This command should rarely be used."""
-		await self.bot.edit_profile(username = "Dota 2 Helper Bot")
-
 		if self.bot.is_owner(ctx.message.author):
+			if self.bot.settings["verbose"]:
+				print("Performing global nickname reset!")
+
 			serverlist = list(self.bot.servers)
 			for server in serverlist:
 				await self.unset_nick(server)
 
 			await self.bot.say("It is finished. Now others shall know me as I truly am.")
-			if self.bot.settings["verbose"]:
-				print("Performing global nickname reset!")
-
 		else:
 			await self.bot.say("You have not the authority to issue such a command.")
 
@@ -202,7 +200,7 @@ class General:
 		"""Displays a basic FAQ."""
 		emb = discord.Embed()
 		emb.set_author(name = "Frequently Asked Questions")
-		emb.add_field(name = "What's with the nicknames? Can I set my own nickname for the bot?", value = "If the `autochangename` setting is on, the bot will automatically change its name periodically the name of a random Dota 2 bot. To set your own nickname for the bot, disable `autochangename` and then right-click the bot and select \"Change Nickname\".")
+		emb.add_field(name = "What's with the nicknames? Can I set my own nickname for the bot?", value = "If the `autochangename` setting is on, the bot will automatically change its name periodically to the name of a random Dota 2 bot. To set your own nickname for the bot, disable `autochangename` and then right-click the bot and select \"Change Nickname\".")
 		emb.add_field(name = "Is The International already on the bot's list or do I need to add it?", value = "It should already be there if you're using my instance of the bot. You can check by looking for \"5401\" in the `%sleagues` command." % self.bot.get_prefix())
 		emb.add_field(name = "Will you periodically add new leagues to the bot?", value = "I will on my instance of the bot. If you're running your own instance of the bot, you'll have to add new leagues through the `%saddleague` command or by editing the settings.json file." % self.bot.get_prefix())
 		emb.add_field(name = "How do I find out what ID a tournament comes under?", value = "You can get league IDs by calling Valve's API (https://api.steampowered.com/IDOTA2Match_570/GetLeagueListing/v1/?key=YOUR_API_KEY). In the future I hope to have some way to let people know the league IDs of upcoming tournaments more easily.")
