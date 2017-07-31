@@ -89,6 +89,8 @@ Any action that changes a server-specific setting must be performed by a server 
 
 `reload` - Reloads all cogs. Can only be used by the bot owner.
 
+`servers` - Shows all the servers the bot is connected to.
+
 ## Tips
 
 * I recommend that you set the PYTHONIOENCODING environment variable to utf-8 in order to give the program an easier time when trying to print team names with special characters, especially in verbose mode. On Linux, try `export PYTHONIOENCODING="utf-8"`. On Windows, try `set PYTHONIOENCODING="utf-8"`.

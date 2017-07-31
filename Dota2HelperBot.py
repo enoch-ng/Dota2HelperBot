@@ -88,6 +88,9 @@ class Bot(commands.Bot):
 	async def get_owner(self):
 		return await self.get_user_info(self.settings["owner"])
 
+	#####################################################################
+	# These functions are deprecated. It is preferred to use the ones in the Dota cog.
+
 	def get_matches_channel(self, server):
 		return self.server_settings_list[server.id]["matches_channel"]
 
@@ -97,11 +100,19 @@ class Bot(commands.Bot):
 	def get_show_result(self, server):
 		return self.server_settings_list[server.id]["show_result"]
 
+	#####################################################################
+
 	def get_notable_leagues(self):
 		return self.settings["notable_leagues"]
 
 	def get_prefix(self):
 		return self.settings["prefix"]
+
+	def get_apikey(self):
+		return self.settings["apikey"]
+
+	def get_api_interval(self):
+		return self.settings["api_interval"]
 	
 	def save_server_settings(self):
 		with open("data/server_settings.json", "w") as serv_set:

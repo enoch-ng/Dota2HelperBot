@@ -87,11 +87,20 @@ class Dota:
 	def __init__(self, bot):
 		self.bot = bot
 
+	def get_matches_channel(self, server):
+		return self.bot.server_settings_list[server.id]["matches_channel"]
+
+	def get_victory_messages(self, server):
+		return self.bot.server_settings_list[server.id]["victory_messages"]
+
+	def get_show_result(self, server):
+		return self.bot.server_settings_list[server.id]["show_result"]
+
 	async def say_match_start(self, msg):
 		serverlist = list(self.bot.servers)
 		for s in serverlist:
 			try: # Catching potential HTTPExceptions here is actually important, because if we don't then the background task will stop
-				matches_channel = self.bot.server_settings_list[s.id]["matches_channel"]
+				matches_channel = self.get_matches_channel(s)
 				if matches_channel:
 					try:
 						await self.bot.send_message(self.bot.get_channel(matches_channel), msg)
@@ -105,10 +114,10 @@ class Dota:
 	async def say_victory_message(self, msg_winner, msg_no_winner):
 		serverlist = list(self.bot.servers)
 		for s in serverlist:
-			if self.bot.server_settings_list[s.id]["victory_messages"]:
+			if self.get_victory_messages(s):
 				try:
-					msg = msg_winner if self.bot.server_settings_list[s.id]["show_result"] else msg_no_winner
-					matches_channel = self.bot.server_settings_list[s.id]["matches_channel"]
+					msg = msg_winner if self.get_show_result(s) else msg_no_winner
+					matches_channel = self.get_matches_channel(s)
 					if matches_channel:
 						try:
 							await self.bot.send_message(self.bot.get_channel(matches_channel), msg)
@@ -186,7 +195,7 @@ class Dota:
 
 	def make_request(self, url, matchid = ""):
 		try:
-			response = requests.get(url, params = {"key": self.bot.settings["apikey"], "match_id": matchid})
+			response = requests.get(url, params = {"key": self.bot.get_apikey(), "match_id": matchid})
 			response.raise_for_status() # Raise an exception if the request was unsuccessful (anything other than status code 200)
 			return response
 		except Exception as err:
@@ -200,7 +209,7 @@ class Dota:
 		await self.bot.wait_until_ready()
 		while not self.bot.is_closed:
 			await asyncio.sleep(self.bot.next_interval)
-			self.bot.next_interval = self.bot.settings["api_interval"]
+			self.bot.next_interval = self.bot.get_api_interval()
 			try:
 				response = self.make_request(LIVE_LEAGUE_GAMES_URL)
 			except Exception:
@@ -337,7 +346,7 @@ class Dota:
 		When used without an argument, shows current setting. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
 		server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
 		if not channel:
-			chsetting = self.bot.get_channel(self.bot.get_matches_channel(server))
+			chsetting = self.bot.get_channel(self.get_matches_channel(server))
 			ch = server.default_channel if chsetting is None else chsetting
 			await self.bot.say("%s is currently the designated channel for match updates." % ch.mention)
 		else:
@@ -363,7 +372,7 @@ class Dota:
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn victory messages off. Anything else turns it on."""
 		server = ctx.message.server
 		if not option:
-			vmstate = "enabled" if self.bot.get_victory_messages(server) else "disabled"
+			vmstate = "enabled" if self.get_victory_messages(server) else "disabled"
 			await self.bot.say("Post-game messages are currently %s." % vmstate)
 		else:
 			author = ctx.message.author
@@ -384,7 +393,7 @@ class Dota:
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn this feature off. Anything else turns it on."""
 		server = ctx.message.server
 		if not option:
-			srstate = "enabled" if self.bot.get_show_result(server) else "disabled"
+			srstate = "enabled" if self.get_show_result(server) else "disabled"
 			await self.bot.say("Match results in post-game messages are currently %s." % srstate)
 		else:
 			author = ctx.message.author

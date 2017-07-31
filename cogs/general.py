@@ -44,13 +44,13 @@ class General:
 			newnick = random.choice(BOTNAMES) # Keep rerolling until we get a different name
 		return newnick
 
-	def welcome_channel(self, server):
+	def get_welcome_channel(self, server):
 		return self.bot.server_settings_list[server.id]["welcome_channel"]
 
-	def welcome_messages(self, server):
+	def get_welcome_messages(self, server):
 		return self.bot.server_settings_list[server.id]["welcome_messages"]
 
-	def auto_change_nick(self, server):
+	def get_auto_change_nick(self, server):
 		return self.bot.server_settings_list[server.id]["auto_change_nick"]
 
 	def set_welcome_channel(self, server, channel):
@@ -115,7 +115,7 @@ class General:
 		When used without an argument, shows current setting. Otherwise, accepts a channel mention, a channel name, or a channel ID."""
 		server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
 		if not channel:
-			chsetting = self.bot.get_channel(self.welcome_channel(server))
+			chsetting = self.bot.get_channel(self.get_welcome_channel(server))
 			ch = server.default_channel if chsetting is None else chsetting
 			await self.bot.say("%s is currently the designated channel for welcome messages." % ch.mention)
 		else:
@@ -141,7 +141,7 @@ class General:
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn welcome messages off. Anything else turns it on."""
 		server = ctx.message.server
 		if not option:
-			wmstate = "enabled" if self.welcome_messages(server) else "disabled"
+			wmstate = "enabled" if self.get_welcome_messages(server) else "disabled"
 			await self.bot.say("Welcome messages are currently %s." % wmstate)
 		else:
 			author = ctx.message.author
@@ -162,7 +162,7 @@ class General:
 		When used without an argument, shows current setting. Use "off", "no", or "false" to turn the nickname changing off. Anything else turns it on. Setting this option to false will also reset the bot's nickname."""
 		server = ctx.message.server
 		if not option:
-			rcnstate = "enabled" if self.auto_change_nick(server) else "disabled"
+			rcnstate = "enabled" if self.get_auto_change_nick(server) else "disabled"
 			await self.bot.say("Automatic nickname changing is currently %s." % rcnstate)
 		else:
 			author = ctx.message.author
@@ -184,7 +184,7 @@ class General:
 		"""Chooses a random new nickname for the bot (5s cooldown).
 
 		Is not affected by Octarine Core, Refresher Orb, Rearm, or cooldown reduction talents."""
-		if self.auto_change_nick(ctx.message.server):
+		if self.get_auto_change_nick(ctx.message.server):
 			await self.bot.say("Too long have I endured this moniker. It is time to begin anew.")
 			await self.set_nick(self.choose_nick())
 		else:
@@ -204,6 +204,7 @@ class General:
 		emb.add_field(name = "Is The International already on the bot's list or do I need to add it?", value = "It should already be there if you're using my instance of the bot. You can check by looking for \"5401\" in the `%sleagues` command." % self.bot.get_prefix())
 		emb.add_field(name = "Will you periodically add new leagues to the bot?", value = "I will on my instance of the bot. If you're running your own instance of the bot, you'll have to add new leagues through the `%saddleague` command or by editing the settings.json file." % self.bot.get_prefix())
 		emb.add_field(name = "How do I find out what ID a tournament comes under?", value = "You can get league IDs by calling Valve's API (https://api.steampowered.com/IDOTA2Match_570/GetLeagueListing/v1/?key=YOUR_API_KEY). In the future I hope to have some way to let people know the league IDs of upcoming tournaments more easily.")
+		emb.set_footer(text = "Follow @Dota2HelperBot on Twitter for development news and updates")
 
 		try:
 			await self.bot.say(embed = emb)
