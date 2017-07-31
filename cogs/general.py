@@ -204,7 +204,7 @@ class General:
 		emb.add_field(name = "Is The International already on the bot's list or do I need to add it?", value = "It should already be there if you're using my instance of the bot. You can check by looking for \"5401\" in the `%sleagues` command." % self.bot.get_prefix())
 		emb.add_field(name = "Will you periodically add new leagues to the bot?", value = "I will on my instance of the bot. If you're running your own instance of the bot, you'll have to add new leagues through the `%saddleague` command or by editing the settings.json file." % self.bot.get_prefix())
 		emb.add_field(name = "How do I find out what ID a tournament comes under?", value = "You can get league IDs by calling Valve's API (https://api.steampowered.com/IDOTA2Match_570/GetLeagueListing/v1/?key=YOUR_API_KEY). In the future I hope to have some way to let people know the league IDs of upcoming tournaments more easily.")
-		emb.set_footer(text = "Follow @Dota2HelperBot on Twitter for development news and updates")
+		emb.set_footer(text = "Check @Dota2HelperBot on Twitter for development news and updates")
 
 		try:
 			await self.bot.say(embed = emb)
