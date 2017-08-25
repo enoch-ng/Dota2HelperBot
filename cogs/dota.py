@@ -13,11 +13,12 @@ MATCH_DETAILS_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetail
 MATCH_CHANNEL_NOT_FOUND = "I wish to post in the designated channel for match updates but am unable to, for I lack the required permissions (or else the channel does not exist)."
 
 class Match:
-	def __init__(self, matchid, radiant_team, dire_team, gameno):
+	def __init__(self, matchid, radiant_team, dire_team, gameno, seriestype):
 		self.matchid = matchid
 		self.radiant_team = radiant_team
 		self.dire_team = dire_team
 		self.gameno = gameno
+		self.seriestype = seriestype
 
 class MatchList:
 	def __init__(self, original = None):
@@ -60,8 +61,8 @@ class MatchList:
 
 		return False
 
-	def append(self, matchid, radiant_team, dire_team, gameno):
-		self.matches.append(Match(matchid, radiant_team, dire_team, gameno))
+	def append(self, matchid, radiant_team, dire_team, gameno, seriestype):
+		self.matches.append(Match(matchid, radiant_team, dire_team, gameno, seriestype))
 
 	def remove(self, matchid):
 		for match in self.matches:
@@ -74,12 +75,27 @@ class MatchList:
 	def clear(self):
 		self.matches.clear()
 
-	def match_exists_with_teams(self, radiant_team, dire_team, gameno):
+	def get_match_by_id(self, matchid):
+		for match in self.matches:
+			if match.matchid == matchid:
+				return match
+
+		return None
+
+	def match_exists_with_details(self, radiant_team, dire_team, gameno):
+		# No need to include the series type as a parameter, as the participating teams and game number should be unique enough
 		for match in self.matches:
 			if match.radiant_team == radiant_team and match.dire_team == dire_team and match.gameno == gameno:
 				return True
 
 		return False
+
+	def purge_duplicates(self, matchid):
+		match = self.get_match_by_id(matchid)
+
+		for m in self.matches:
+			if m.radiant_team == match.radiant_team and m.dire_team == match.dire_team and m.gameno == match.gameno and m.matchid != match.matchid:
+				self.matches.remove(m)
 
 class Dota:
 	"""Cog for match updates"""
@@ -156,26 +172,36 @@ class Dota:
 
 		return (radiant_name, dire_name)
 
+	def get_gameno_from_match_details(self, game):
+		# I don't know if Valve's API ever returns a match without radiant_score and dire_score fields
+		return game["radiant_score"] + game["dire_score"] + 1
+
 	async def show_new_match(self, game, radiant_name, dire_name, gameno):
 		if game["series_type"] == 0:
-			series_desc = ""
+			series_desc = "Best of 1"
 		elif game["series_type"] == 1:
-			series_desc = " (Game %s of 3)" % str(gameno)
+			series_desc = "Game %s of 3" % str(gameno)
 		elif game["series_type"] == 2:
-			series_desc = " (Game %s of 5)" % str(gameno)
+			series_desc = "Game %s of 5" % str(gameno)
 		else:
-			series_desc = " (unknown series type %s)" % str(game["series_type"]) # I don't think this is possible
+			series_desc = "unknown series type %s" % str(game["series_type"]) # I don't think this is possible
 
-		await self.say_match_start("The draft for %s vs. %s is now underway%s." % (radiant_name, dire_name, series_desc))
+		await self.say_match_start("The draft for %s vs. %s is now underway (%s)." % (radiant_name, dire_name, series_desc))
 
 	async def show_match_results(self, game):
 		# Not to be confused with show_result, the option for toggling whether the bot reveals the winner, duration, and kill score at the end
-		radiant_name, dire_name = self.get_names_from_match_details(game)
+		matchid = game["match_id"]
+		match = self.bot.ongoing_matches.get_match_by_id(matchid) # Look for the game in our list
+
+		if match.seriestype == 0:
+			series_string = ""
+		else:
+			series_string = "Game %s of " % match.gameno
 		
 		if game["radiant_win"]:
-			winner = radiant_name
+			winner = match.radiant_team
 		else:
-			winner = dire_name
+			winner = match.dire_team
 
 		score = "%s-%s" % (game["radiant_score"], game["dire_score"])
 
@@ -189,8 +215,8 @@ class Dota:
 		else:
 			sec_string = " and %s seconds" % s
 
-		msg_winner = "%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, winner, min_string, sec_string, score, game["match_id"])
-		msg_no_winner = "%s vs. %s has ended. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (radiant_name, dire_name, game["match_id"])
+		msg_winner = "%s%s vs. %s has ended in %s victory, %s%s in. The final score was %s. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (series_string, match.radiant_team, match.dire_team, winner, min_string, sec_string, score, matchid)
+		msg_no_winner = "%s%s vs. %s has ended. Dotabuff: <https://www.dotabuff.com/matches/%s>" % (series_string, match.radiant_team, match.dire_team, matchid)
 		await self.say_victory_message(msg_winner, msg_no_winner)
 
 	def make_request(self, url, matchid = ""):
@@ -233,6 +259,7 @@ class Dota:
 					else:
 						radiant_name, dire_name = self.get_names_from_league_game(game)
 						gameno = game["radiant_series_wins"] + game["dire_series_wins"] + 1
+						seriestype = game["series_type"]
 
 						if self.bot.settings["verbose"]:
 							try:
@@ -240,10 +267,11 @@ class Dota:
 							except UnicodeEncodeError:
 								print("A new match has been added to the list, but could not be displayed here due to an encoding error")
 						
-						if not (self.bot.settings["no_repeat_matches"] and self.bot.ongoing_matches.match_exists_with_teams(radiant_name, dire_name, gameno)):
+						# This condition is needed to eliminate "duplicate" matches if the no_repeat_matches setting is enabled
+						if not (self.bot.settings["no_repeat_matches"] and self.bot.ongoing_matches.match_exists_with_details(radiant_name, dire_name, gameno)):
 							await self.show_new_match(game, radiant_name, dire_name, gameno)
 
-						self.bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name, gameno)
+						self.bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name, gameno, seriestype)
 
 			for finished in finished_matches:
 				await asyncio.sleep(2)
@@ -272,6 +300,7 @@ class Dota:
 						print("A match has finished, but could not be displayed here due to an encoding error")
 
 				await self.show_match_results(game)
+				self.bot.ongoing_matches.purge_duplicates(finished.matchid)
 				self.bot.ongoing_matches.remove(finished.matchid)
 
 	@commands.command()
@@ -280,7 +309,16 @@ class Dota:
 		if len(self.bot.ongoing_matches) > 0:
 			response = "Ongoing games:"
 			for match in self.bot.ongoing_matches:
-				response += "\n%s vs. %s (Match %s)" % (match.radiant_team, match.dire_team, match.matchid)
+				if match.seriestype == 0:
+					series_string = "Best of 1"
+				elif match.seriestype == 1:
+					series_string = "Game %s of 3" % match.gameno
+				elif match.seriestype == 2:
+					series_string = "Game %s of 5" % match.gameno
+				else:
+					series_string = "unknown series type"
+
+				response += "\n%s vs. %s (%s)" % (match.radiant_team, match.dire_team, series_string)
 			await self.bot.say(response)
 		else:
 			await self.bot.say("There are as yet no ongoing games.")
