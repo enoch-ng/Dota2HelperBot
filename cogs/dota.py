@@ -1,6 +1,7 @@
 import asyncio
 import requests
 import time
+from json.decoder import JSONDecodeError
 
 try:
 	import discord
@@ -248,7 +249,11 @@ class Dota:
 				text = response.text.encode("utf-8")
 				file.write(str(text))
 
-			games = response.json()["result"]["games"]
+			try:
+				games = response.json()["result"]["games"]
+			except JSONDecodeError:
+				continue
+
 			finished_matches = MatchList(self.bot.ongoing_matches)
 			for game in games:
 				league_ok = not self.bot.settings["filter_matches"] or game["league_id"] in self.bot.settings["notable_leagues"]
@@ -285,7 +290,10 @@ class Dota:
 				except Exception:
 					continue
 
-				game = postgame.json()["result"]
+				try:
+					game = postgame.json()["result"]
+				except JSONDecodeError:
+					continue
 
 				# It seems that sometimes the match disappears from the GetLiveLeagueGames listing, but hasn't actually ended yet. I don't know why...
 				if "radiant_win" not in game or "duration" not in game:
