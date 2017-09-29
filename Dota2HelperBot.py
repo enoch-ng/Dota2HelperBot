@@ -189,7 +189,7 @@ async def on_ready():
 	print("To add this bot to a server, go to: %s" % bot.joinurl)
 	print()
 
-	await bot.change_presence(game = discord.Game(name = "Type %shelp" % bot.settings["prefix"]))
+	await bot.change_presence(game = discord.Game(name = "%smatchchannel to set channel for match updates" % bot.settings["prefix"]))
 
 @bot.event
 async def on_server_join(server):

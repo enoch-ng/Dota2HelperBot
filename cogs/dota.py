@@ -117,18 +117,16 @@ class Dota:
 		serverlist = list(self.bot.servers)
 		for s in serverlist:
 			try: # Catching potential HTTPExceptions here is actually important, because if we don't then the background task will stop
-				matches_channel = self.get_matches_channel(s)
+				matches_channel = self.bot.get_channel(self.get_matches_channel(s))
 				if matches_channel:
 					try:
-						await self.bot.send_message(self.bot.get_channel(matches_channel), msg)
+						await self.bot.send_message(matches_channel, msg)
 					except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
-						await self.bot.send_message(s.default_channel, MATCH_CHANNEL_NOT_FOUND)
-				else:
-					await self.bot.send_message(s.default_channel, msg)
+						pass
 			except discord.HTTPException:
 				pass
-			except Exception as e:
-				print("Unable to announce draft: %s" % e)
+			#except Exception as e:
+			#	print("Unable to announce draft: %s" % e)
 
 	async def say_victory_message(self, msg_winner, msg_no_winner):
 		serverlist = list(self.bot.servers)
@@ -136,18 +134,16 @@ class Dota:
 			if self.get_victory_messages(s):
 				try:
 					msg = msg_winner if self.get_show_result(s) else msg_no_winner
-					matches_channel = self.get_matches_channel(s)
+					matches_channel = self.bot.get_channel(self.get_matches_channel(s))
 					if matches_channel:
 						try:
-							await self.bot.send_message(self.bot.get_channel(matches_channel), msg)
+							await self.bot.send_message(matches_channel, msg)
 						except (discord.Forbidden, discord.NotFound, discord.InvalidArgument):
-							await self.bot.send_message(s.default_channel, MATCH_CHANNEL_NOT_FOUND)
-					else:
-						await self.bot.send_message(s.default_channel, msg)
+							pass
 				except discord.HTTPException:
 					pass
-				except Exception as e:
-					print("Unable to announce end of match: %s" % e)
+				#except Exception as e:
+				#	print("Unable to announce end of match: %s" % e)
 
 	def get_names_from_league_game(self, game):
 		# Gets team names from a game provided by a GetLiveLeagueGames call. If a team has no name, it is "Radiant" or "Dire".
@@ -397,8 +393,10 @@ class Dota:
 		server = ctx.message.server # As no_pm is true here, I am assuming server cannot be None
 		if not channel:
 			chsetting = self.bot.get_channel(self.get_matches_channel(server))
-			ch = server.default_channel if chsetting is None else chsetting
-			await self.bot.say("%s is currently the designated channel for match updates." % ch.mention)
+			if chsetting is None:
+				await self.bot.say("No channel for match updates has been set. Type `%smatchchannel [channel]` to set one." % self.bot.settings["prefix"])
+			else:
+				await self.bot.say("%s is currently the designated channel for match updates." % chsetting.mention)
 		else:
 			author = ctx.message.author
 			if self.bot.is_owner(author) or self.bot.is_admin(author):

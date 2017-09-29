@@ -97,10 +97,32 @@ Any action that changes a server-specific setting must be performed by a server 
 * Valve's API occasionally sends multiple matches with the same data but different match IDs. Although the bot should filter out the duplicates (with no_repeat_matches enabled), it will still track all of them, since it has no way of knowing which is the "real" one. After a while, there might be a slowly growing pile of duplicate matches that will never finish. Therefore, it's a good idea to run `ongoing` (to make sure no real matches are going on) and `untrack` from time to time to clean them up. In the future the program will be able to clean up these duplicates automatically.
 * You can get league IDs by calling the GetLeagueListing API method: https://api.steampowered.com/IDOTA2Match_570/GetLeagueListing/v1/?key= For convenience, I've added TI7 (ID 5401) to the defaults.
 
+## FAQ
+
+**"Why am I not getting updates for matches?"**
+
+Make sure a channel is set through the `;matchchannel` command. Also, make sure you've given the bot permissions to talk in that channel.
+
+**What's with the nicknames? Can I set my own nickname for the bot?**
+
+If the `autochangename` setting is on, the bot will automatically change its name periodically to the name of a random Dota 2 bot. To set your own nickname for the bot, disable `autochangename` and then right-click the bot and select "Change Nickname".
+
+**Will you periodically add new leagues to the bot?**
+
+I will on my instance of the bot. If you're running your own instance of the bot, you'll have to add new leagues through the `;addleague` command or by editing the settings.json file.
+
+**How do I find out what ID a tournament comes under?**
+
+You can get league IDs by calling Valve's API (https://api.steampowered.com/IDOTA2Match_570/GetLeagueListing/v1/?key=YOUR_API_KEY). In the future I hope to have some way to let people know the league IDs of upcoming tournaments more easily.
+
 ## Todo
 
+* Suppress first round of announcements (this is to avoid repeating announcements for ongoing matches if the bot is restarted)
+* Add proper error handling if the bot does not have permissions to talk
 * Implement unimplemented commands
 * Implement subcommands
 * Twitch streams
 * Fetch and save kill score and net worth difference periodically
 * Auto de-duplication
+
+Check @Dota2HelperBot on Twitter for development news and updates
