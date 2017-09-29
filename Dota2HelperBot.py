@@ -225,3 +225,4 @@ try:
 	bot.run(bot.settings["token"])
 except discord.errors.LoginFailure:
 	print("The token provided in data/settings.json was not accepted. Please make sure it is valid.")
+

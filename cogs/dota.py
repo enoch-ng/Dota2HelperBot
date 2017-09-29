@@ -127,6 +127,8 @@ class Dota:
 					await self.bot.send_message(s.default_channel, msg)
 			except discord.HTTPException:
 				pass
+			except Exception as e:
+				print("Unable to announce draft: %s" % e)
 
 	async def say_victory_message(self, msg_winner, msg_no_winner):
 		serverlist = list(self.bot.servers)
@@ -144,6 +146,8 @@ class Dota:
 						await self.bot.send_message(s.default_channel, msg)
 				except discord.HTTPException:
 					pass
+				except Exception as e:
+					print("Unable to announce end of match: %s" % e)
 
 	def get_names_from_league_game(self, game):
 		# Gets team names from a game provided by a GetLiveLeagueGames call. If a team has no name, it is "Radiant" or "Dire".
