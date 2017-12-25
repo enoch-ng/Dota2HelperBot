@@ -39,6 +39,12 @@ class MatchList:
 			raise IndexError
 		return self.matches[key]
 
+	def __missing__(self):
+		pass # I don't know what this does
+
+	def __setitem__(self):
+		pass # Is this really necessary?
+
 	def __delitem__(self, key):
 		if not isinstance(key, int):
 			raise TypeError
@@ -120,8 +126,8 @@ class Dota:
 						pass
 			except discord.HTTPException:
 				pass
-			except Exception as e: # Not sure under what circumstance this might happen
-				print("Unable to announce draft: %s" % e)
+			#except Exception as e:
+			#	print("Unable to announce draft: %s" % e)
 
 	async def say_victory_message(self, msg_winner, msg_no_winner):
 		serverlist = list(self.bot.servers)
@@ -137,8 +143,8 @@ class Dota:
 							pass
 				except discord.HTTPException:
 					pass
-				except Exception as e:
-					print("Unable to announce end of match: %s" % e)
+				#except Exception as e:
+				#	print("Unable to announce end of match: %s" % e)
 
 	def get_names_from_league_game(self, game):
 		# Gets team names from a game provided by a GetLiveLeagueGames call. If a team has no name, it is "Radiant" or "Dire".
@@ -182,7 +188,7 @@ class Dota:
 		else:
 			series_desc = "unknown series type %s" % str(game["series_type"]) # I don't think this is possible
 
-		await self.say_match_start("The draft for %s vs. %s is underway (%s)." % (radiant_name, dire_name, series_desc))
+		await self.say_match_start("The draft for %s vs. %s is now underway (%s)." % (radiant_name, dire_name, series_desc))
 
 	async def show_match_results(self, game):
 		# Not to be confused with show_result, the option for toggling whether the bot reveals the winner, duration, and kill score at the end
@@ -227,99 +233,88 @@ class Dota:
 				print("The API key provided in data/settings.json was not accepted. Please make sure it is valid.")
 			raise
 
-	async def loop(self):
-		await self.bot.wait_until_ready()
-		await asyncio.sleep(1) # Wait for the rest of the on_ready() stuff to execute - a bit hacky, but it works
-		api_interval = self.bot.get_api_interval()
-		while not self.bot.is_closed:
-			'''If it takes longer than api_interval for get_match_data to finish adding all the matches it can see, new tasks of
-			get_match_data will overlap and report on the same match multiple times, even if no_repeat_matches is enabled! This could
-			possibly be solved with a flag in the Dota object, but I don't think this is realistically a problem.'''
-			self.bot.loop.create_task(self.get_match_data())
-			await asyncio.sleep(api_interval)
-			# If I want to add adjusted wait times again, I can return the extra time waited in the get_match_data method and adjust based on that
-
 	async def get_match_data(self):
-		try:
-			response = self.make_request(LIVE_LEAGUE_GAMES_URL)
-		except Exception:
-			return # Just try again next time
-
-		current_time = time.time()
-
-		if self.bot.settings["save_match_data"]:
-			file = open("matchdata%s.txt" % current_time, "w")
-			text = response.text.encode("utf-8")
-			file.write(str(text))
-
-		try:
-			games = response.json()["result"]["games"]
-		except JSONDecodeError:
-			return
-
-		finished_matches = MatchList(self.bot.ongoing_matches)
-		for game in games:
-			league_ok = not self.bot.settings["filter_matches"] or game["league_id"] in self.bot.settings["notable_leagues"]
-			league_ok = league_ok and game["league_id"] != 5610 # Quick fix to ignore matches from league 5610
-			generic_ok = not self.bot.settings["filter_generic"] or "radiant_team" in game or "dire_team" in game
-			if league_ok and generic_ok and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
-				if game["match_id"] in self.bot.ongoing_matches:
-					finished_matches.remove(game["match_id"])
-				else:
-					radiant_name, dire_name = self.get_names_from_league_game(game)
-					gameno = game["radiant_series_wins"] + game["dire_series_wins"] + 1
-					seriestype = game["series_type"]
-
-					if self.bot.settings["verbose"]:
-						try:
-							print("[%s] Adding match %s to list (%s vs. %s, Game %s)" % (current_time, game["match_id"], radiant_name, dire_name, gameno))
-						except UnicodeEncodeError:
-							print("A new match has been added to the list, but could not be displayed here due to an encoding error")
-						
-					# This condition is needed to eliminate "duplicate" matches if the no_repeat_matches setting is enabled
-					if not (self.bot.settings["no_repeat_matches"] and self.bot.ongoing_matches.match_exists_with_details(radiant_name, dire_name, gameno)):
-						await self.show_new_match(game, radiant_name, dire_name, gameno)
-
-					self.bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name, gameno, seriestype)
-
-		for finished in finished_matches:
-			await asyncio.sleep(2)
-			# Subtract the extra time waited to preserve the 20-second interval, but not if doing so would cause the time until the next call to be less than 2 seconds
-			# if self.bot.next_interval > 4:
-			#	self.bot.next_interval -= 2
-
-			# Fetch specific game data
+		await self.bot.wait_until_ready()
+		while not self.bot.is_closed:
+			await asyncio.sleep(self.bot.next_interval)
+			self.bot.next_interval = self.bot.get_api_interval()
 			try:
-				postgame = self.make_request(MATCH_DETAILS_URL, matchid = finished.matchid)
+				response = self.make_request(LIVE_LEAGUE_GAMES_URL)
 			except Exception:
-				continue
+				continue # Just try again next time
+
+			current_time = time.time()
+
+			if self.bot.settings["save_match_data"]:
+				file = open("matchdata%s.txt" % current_time, "w")
+				text = response.text.encode("utf-8")
+				file.write(str(text))
 
 			try:
-				game = postgame.json()["result"]
+				games = response.json()["result"]["games"]
 			except JSONDecodeError:
 				continue
 
-			# It seems that sometimes the match disappears from the GetLiveLeagueGames listing, but hasn't actually ended yet. I don't know why...
-			if "radiant_win" not in game or "duration" not in game:
-				continue
+			finished_matches = MatchList(self.bot.ongoing_matches)
+			for game in games:
+				league_ok = not self.bot.settings["filter_matches"] or game["league_id"] in self.bot.settings["notable_leagues"]
+				generic_ok = not self.bot.settings["filter_generic"] or "radiant_team" in game or "dire_team" in game
+				if league_ok and generic_ok and game["match_id"] > 0: # Valve's API occasionally gives us the dreaded "Match 0"
+					if game["match_id"] in self.bot.ongoing_matches:
+						finished_matches.remove(game["match_id"])
+					else:
+						radiant_name, dire_name = self.get_names_from_league_game(game)
+						gameno = game["radiant_series_wins"] + game["dire_series_wins"] + 1
+						seriestype = game["series_type"]
 
-			if self.bot.settings["verbose"]:
-				radiant_name, dire_name = self.get_names_from_match_details(game)
+						if self.bot.settings["verbose"]:
+							try:
+								print("[%s] Adding match %s to list (%s vs. %s, Game %s)" % (current_time, game["match_id"], radiant_name, dire_name, gameno))
+							except UnicodeEncodeError:
+								print("A new match has been added to the list, but could not be displayed here due to an encoding error")
+						
+						# This condition is needed to eliminate "duplicate" matches if the no_repeat_matches setting is enabled
+						if not (self.bot.settings["no_repeat_matches"] and self.bot.ongoing_matches.match_exists_with_details(radiant_name, dire_name, gameno)):
+							await self.show_new_match(game, radiant_name, dire_name, gameno)
+
+						self.bot.ongoing_matches.append(game["match_id"], radiant_name, dire_name, gameno, seriestype)
+
+			for finished in finished_matches:
+				await asyncio.sleep(2)
+				# Subtract the extra time waited to preserve the 20-second interval, but not if doing so would cause the time until the next call to be less than 2 seconds
+				if self.bot.next_interval > 4:
+					self.bot.next_interval -= 2
+
+				# Fetch specific game data
+				try:
+					postgame = self.make_request(MATCH_DETAILS_URL, matchid = finished.matchid)
+				except Exception:
+					continue
 
 				try:
-					print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
-				except UnicodeEncodeError:
-					print("A match has finished, but could not be displayed here due to an encoding error")
+					game = postgame.json()["result"]
+				except JSONDecodeError:
+					continue
 
-			await self.show_match_results(game)
-			self.bot.ongoing_matches.purge_duplicates(finished.matchid)
-			self.bot.ongoing_matches.remove(finished.matchid)
+				# It seems that sometimes the match disappears from the GetLiveLeagueGames listing, but hasn't actually ended yet. I don't know why...
+				if "radiant_win" not in game or "duration" not in game:
+					continue
 
-		#await asyncio.sleep(self.bot.get_api_interval()) # We wait in the get_match_data method instead of the loop method to avoid conflicts if the tasks are executed too quickly
+				if self.bot.settings["verbose"]:
+					radiant_name, dire_name = self.get_names_from_match_details(game)
+
+					try:
+						print("[%s] Match %s (%s vs. %s) finished" % (current_time, finished.matchid, radiant_name, dire_name))
+					except UnicodeEncodeError:
+						print("A match has finished, but could not be displayed here due to an encoding error")
+
+				await self.show_match_results(game)
+				self.bot.ongoing_matches.purge_duplicates(finished.matchid)
+				self.bot.ongoing_matches.remove(finished.matchid)
 
 	@commands.command()
 	async def ongoing(self):
-		"""Shows matches that are being tracked by the bot."""
+		"""Shows matches that are currently being tracked by the bot."""
 		if len(self.bot.ongoing_matches) > 0:
 			response = "Ongoing games:"
 			for match in self.bot.ongoing_matches:
@@ -335,17 +330,17 @@ class Dota:
 				response += "\n%s vs. %s (%s)" % (match.radiant_team, match.dire_team, series_string)
 			await self.bot.say(response)
 		else:
-			await self.bot.say("There are no ongoing games.")
+			await self.bot.say("There are as yet no ongoing games.")
 
 	@commands.command()
 	async def leagues(self):
-		"""Shows leagues that are being tracked by the bot."""
+		"""Displays leagues being tracked by the bot."""
 		leagues = self.bot.get_notable_leagues()
 		if len(leagues) > 0:
 			response = "Tracked leagues: " + ", ".join([str(item) for item in leagues])
 			await self.bot.say(response)
 		else:
-			await self.bot.say("There are no leagues being tracked.")
+			await self.bot.say("There are as yet no leagues being tracked.")
 
 	@commands.command(pass_context = True)
 	async def untrack(self, ctx):
@@ -355,41 +350,41 @@ class Dota:
 		if self.bot.is_owner(ctx.message.author):
 			if len(self.bot.ongoing_matches) > 0:
 				self.bot.ongoing_matches.clear()
-				await self.bot.say("All ongoing matches have been cleared.")
+				await self.bot.say("Done. Let them be forgotten like the dust which blows in the wind.")
 			else:
-				await self.bot.say("There are no ongoing matches.")
+				await self.bot.say("There are no ongoing matches. How can we erase what never existed?")
 		else:
-			await self.bot.say(PERMERR)
+			await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True)
 	async def addleague(self, ctx, league_id: int):
-		"""Adds to the list of tracked leagues.
+		"""Adds to the list of notable leagues.
 
-		Can only be used by the bot owner. Accepts a league ID from the GetLeagueListing API call."""
+		Can only be used by the bot owner. Does not currently affect the notable_leagues field in settings.json, so any changes made using this command are not persistent between restarts."""
 		if self.bot.is_owner(ctx.message.author):
 			leagues = self.bot.get_notable_leagues()
 			if league_id in leagues:
-				await self.bot.say("I am already tracking that league.")
+				await self.bot.say("Oh? I am already tracking that league.")
 			else:
 				self.bot.add_notable_league(league_id)
-				await self.bot.say("League successfully added.")
+				await self.bot.say("I shall keep an eye out for matches in that league.")
 		else:
-			await self.bot.say(PERMERR)
+			await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True)
 	async def rmleague(self, ctx, league_id: int):
 		"""Removes from the list of notable leagues.
 
-		Can only be used by the bot owner. Accepts a league ID from the GetLeagueListing API call."""
+		Can only be used by the bot owner. Does not currently affect the notable_leagues field in settings.json, so any changes made using this command are not persistent between restarts."""
 		if self.bot.is_owner(ctx.message.author):
 			leagues = self.bot.get_notable_leagues()
 			if league_id in leagues:
 				self.bot.remove_notable_league(league_id)
-				await self.bot.say("League successfully removed.")
+				await self.bot.say("So be it. Matches in that league concern me no longer.")
 			else:
-				await self.bot.say("I am not currently tracking that league.")
+				await self.bot.say("I am not tracking that league. How can we erase what never existed?")
 		else:
-			await self.bot.say(PERMERR)
+			await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True, no_pm = True)
 	async def matchchannel(self, ctx, channel = None):
@@ -413,11 +408,11 @@ class Dota:
 							await self.bot.say("%s is now the designated channel for match updates." % ch.mention)
 							return
 						else:
-							await self.bot.say("You must use a text channel for that.")
+							await self.bot.say("That channel cannot be used for such purposes.")
 							return
-				await self.bot.say("No channel matching that argument was found. Try using a channel mention instead.")
+				await self.bot.say("Alas, I know of no such channel.")
 			else:
-				await self.bot.say(PERMERR)
+				await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True, no_pm = True)
 	async def victorymessages(self, ctx, option = None):
@@ -438,7 +433,7 @@ class Dota:
 					self.bot.set_victory_messages(server, True)
 					await self.bot.say("Post-game messages are now enabled.")
 			else:
-				await self.bot.say(PERMERR)
+				await self.bot.say("You have not the authority to issue such a command.")
 
 	@commands.command(pass_context = True, no_pm = True)
 	async def showresult(self, ctx, option = None):
@@ -459,10 +454,11 @@ class Dota:
 					self.bot.set_show_result(server, True)
 					await self.bot.say("Match results in post-game messages are now enabled.")
 			else:
-				await self.bot.say(PERMERR)
+				await self.bot.say("You have not the authority to issue such a command.")
 
 def setup(bot):
 	dota = Dota(bot)
 	bot.add_cog(dota)
 	bot.ongoing_matches = MatchList()
-	bot.loop.create_task(dota.loop())
+	bot.loop.create_task(dota.get_match_data())
+	

@@ -1,5 +1,3 @@
-# Dota2HelperBot, a Discord bot created by Blanedale
-
 import random
 import asyncio
 import json
@@ -8,33 +6,28 @@ try:
 	import discord
 	from discord.ext import commands
 except ImportError:
-	print("Unable to start Dota2HelperBot. Check your discord.py installation.")
+	print("Unable to start Nova. Check your discord.py installation.")
 
-DESC = "Dota2HelperBot, a Discord bot created by Blanedale"
+DESC = "Nova, a Discord bot to give live updates on Dota 2 tournament games"
+REQUIRED_PERMISSIONS = 3072
 BOT_DEFAULTS = {
 	"token": "",
 	"prefix": ";",
 	"owner": "",
-	"changenick_interval": 3600,
 	"api_interval": 20,
 	"apikey": "",
 	"filter_matches": True,
-	"notable_leagues": [5401],
+	"notable_leagues": [],
 	"filter_generic": True,
 	"no_repeat_matches": True,
 	"save_match_data": False,
 	"verbose": True
 }
 SERVER_DEFAULTS = {
-	"welcome_channel": "",
 	"matches_channel": "",
-	"welcome_messages": False,
 	"victory_messages": True,
 	"show_result": True,
-	"auto_change_nick": False
 }
-CDMESSAGES = ["It is not time yet.", "'Tis not yet time.", "Not yet.",
-	"I need more time.", "I am not ready.", "It is not yet time."]
 
 settings = {}
 
@@ -47,7 +40,7 @@ try:
 			else:
 				settings[key] = BOT_DEFAULTS[key]
 except FileNotFoundError:
-	print("You need to create a file named settings.json in the data folder (if there is none, create one). Please see the README for more information.")
+	print("You need to create a file named settings.json in the data folder. Please see the README for more information.")
 	raise SystemExit
 except json.decoder.JSONDecodeError:
 	print("Could not load settings.json. Please make sure the syntax is correct.")
@@ -71,8 +64,7 @@ class Bot(commands.Bot):
 		self.formatter = commands.formatter.HelpFormatter()
 		self.settings = {}
 		self.server_settings_list = {}
-		self.nick = ""
-		# Maybe put the above code in this block, so the bot.settings = settings line is not needed? But I would need a way to change the prefix T.T
+		# Maybe put the above code in this block, so the bot.settings = settings line is not needed? But I would need a way to change the prefix
 
 	async def send_cmd_help(self, ctx):
 		pages = self.formatter.format_help_for(ctx, ctx.command)
@@ -88,20 +80,6 @@ class Bot(commands.Bot):
 	async def get_owner(self):
 		return await self.get_user_info(self.settings["owner"])
 
-	#####################################################################
-	# These functions are deprecated. It is preferred to use the ones in the Dota cog.
-
-	def get_matches_channel(self, server):
-		return self.server_settings_list[server.id]["matches_channel"]
-
-	def get_victory_messages(self, server):
-		return self.server_settings_list[server.id]["victory_messages"]
-
-	def get_show_result(self, server):
-		return self.server_settings_list[server.id]["show_result"]
-
-	#####################################################################
-
 	def get_notable_leagues(self):
 		return self.settings["notable_leagues"]
 
@@ -114,6 +92,10 @@ class Bot(commands.Bot):
 	def get_api_interval(self):
 		return self.settings["api_interval"]
 	
+	def save_settings(self):
+		with open("data/settings.json", "w") as bot_set:
+			json.dump(self.settings, bot_set, indent = 4)
+
 	def save_server_settings(self):
 		with open("data/server_settings.json", "w") as serv_set:
 			json.dump(self.server_settings_list, serv_set, indent = 4)
@@ -144,9 +126,11 @@ class Bot(commands.Bot):
 
 	def add_notable_league(self, league):
 		self.settings["notable_leagues"].append(league)
+		self.save_settings()
 
 	def remove_notable_league(self, league):
 		self.settings["notable_leagues"].remove(league)
+		self.save_settings()
 
 bot = Bot(command_prefix = settings["prefix"], description = DESC)
 bot.settings = settings
@@ -171,16 +155,17 @@ async def on_ready():
 	try:
 		await bot.get_owner()
 	except discord.NotFound:
-		print("The bot owner could not be determined. Please check your settings.json file.")
+		print("The bot owner could not be determined. Please manually enter the owner's ID in the settings.json file.")
 		print()
 
+	bot.save_settings()
 	for server in bot.servers:
 		bot.autogenerate_server_settings(server)
 
-	bot.joinurl = "https://discordapp.com/oauth2/authorize?&client_id=%s&scope=bot" % bot.user.id
+	bot.joinurl = "https://discordapp.com/oauth2/authorize?&client_id=%s&scope=bot&permissions=%s" % (bot.user.id, REQUIRED_PERMISSIONS)
 
 	print()
-	print("Dota 2 Helper Bot, a Discord bot created by Blanedale")
+	print(DESC)
 	print()
 	print("Connected to the following servers:")
 	for server in bot.servers:
@@ -188,8 +173,6 @@ async def on_ready():
 	print()
 	print("To add this bot to a server, go to: %s" % bot.joinurl)
 	print()
-
-	await bot.change_presence(game = discord.Game(name = "%smatchchannel to set channel for match updates" % bot.settings["prefix"]))
 
 @bot.event
 async def on_server_join(server):
@@ -201,19 +184,14 @@ async def on_command_error(error, ctx):
 	if isinstance(error, commands.MissingRequiredArgument):
 		await bot.send_cmd_help(ctx)
 	elif isinstance(error, commands.BadArgument):
-		await bot.send_message(channel, "Truly, your wish is my command, but I cannot make head nor tail of the argument you provide.")
+		await bot.send_message(channel, "Your command could not be processed because one or more arguments was invalid.")
 	elif isinstance(error, commands.CommandNotFound):
 		# This is almost as ugly as Manta on Medusa
-		await bot.send_message(channel, "I fear I know not of this \"%s\". Is it perchance a new Hero?" % ctx.message.content[len(bot.settings["prefix"]):].partition(' ')[0])
-	elif isinstance(error, commands.CommandOnCooldown):
-		await bot.send_message(channel, random.choice(CDMESSAGES) + " (%ss remaining)" % int(error.retry_after))
+		await bot.send_message(channel, "A command matching \"%s\" was not found." % ctx.message.content[len(bot.settings["prefix"]):].partition(' ')[0])
 	elif isinstance(error, commands.NoPrivateMessage):
-		await bot.send_message(channel, "Truly, your wish is my command, but that order is not to be issued in secret. It must be invoked in a server.")
+		await bot.send_message(channel, "That command cannot be used in DMs.")
 	else:
-		try:
-			await bot.send_message(channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve. Methinks you would do well to consult %s on this matter." % (await bot.get_owner()).mention)
-		except discord.NotFound:
-			await bot.send_message(channel, "I fear some unprecedented disaster has occurred which I cannot myself resolve.")
+		await bot.send_message(channel, "An unexpected error has occurred. Please report this incident to the developer.")
 		if isinstance(error, commands.CommandInvokeError):
 			print(repr(error.original))
 		else:
